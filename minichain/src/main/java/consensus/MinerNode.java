@@ -5,7 +5,9 @@ import data.*;
 import utils.MinerUtil;
 import utils.SHA256Util;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
 
 /**
@@ -68,8 +70,34 @@ public class MinerNode extends Thread {
     public BlockBody getBlockBody(Transaction[] transactions) {
         assert transactions != null && transactions.length == MiniChainConfig.MAX_TRANSACTION_COUNT;
         //todo
+        int nodeCount = transactions.length;
 
-        return null;
+        Queue<String> hashStr = new LinkedList<>();
+
+        // 对每一个交易进行哈希
+        for (Transaction transaction : transactions) {
+            hashStr.offer(SHA256Util.sha256Digest(transaction.toString()));
+        }
+
+        while (nodeCount != 1) {
+            // 考虑奇数情况
+            if (nodeCount % 2 == 1) {
+                hashStr.offer(hashStr.peek());
+                nodeCount += 1;
+            }
+
+            nodeCount /= 2;
+            for (int i = 0; i < nodeCount; i++) {
+                String s1 = hashStr.poll();
+                String s2 = hashStr.poll();
+
+                hashStr.offer(SHA256Util.sha256Digest(s1 + s2));
+            }
+
+        }
+
+        BlockBody ret = new BlockBody(hashStr.poll(), transactions);
+        return ret;
     }
 
     /**
