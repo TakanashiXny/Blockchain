@@ -5,7 +5,6 @@ import data.*;
 import utils.MinerUtil;
 import utils.SHA256Util;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
@@ -120,7 +119,7 @@ public class MinerNode extends Thread {
                 break;
             } else {
                 //todo
-                
+                block = getBlock(blockBody);
             }
         }
     }
@@ -137,8 +136,18 @@ public class MinerNode extends Thread {
      */
     public Block getBlock(BlockBody blockBody) {
         //todo
+        Block preBlock = this.blockChain.getNewestBlock();  // 得到前一个块
+        String preHash = SHA256Util.sha256Digest(preBlock.toString());
 
-        return null;
+        Random random = new Random();
+
+        // 生成随机的long整数
+        long nonce = random.nextLong();
+
+        BlockHeader blockHeader = new BlockHeader(preHash, blockBody.getMerkleRootHash(), nonce);
+
+        Block ret = new Block(blockHeader, blockBody);
+        return ret;
     }
 
 }
