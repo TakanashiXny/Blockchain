@@ -1,6 +1,7 @@
 package consensus;
 
 import data.*;
+import network.NetWork;
 import utils.SecurityUtil;
 
 import java.util.ArrayList;
@@ -13,18 +14,17 @@ import java.util.UUID;
  */
 public class TransactionProducer extends Thread {
 
-    private TransactionPool transactionPool;
-    private final BlockChain blockChain;
+    private final NetWork netWork;
 
-    public TransactionProducer(TransactionPool transactionPool, BlockChain blockChain) {
-        this.transactionPool = transactionPool;
-        this.blockChain = blockChain;
+    public TransactionProducer(NetWork netWork) {
+        this.netWork = netWork;
     }
 
     @Override
     public void run() {
         while (true) {
-            synchronized (transactionPool) {
+            synchronized (netWork.getTransactionPool()) {
+                TransactionPool transactionPool = netWork.getTransactionPool();
                 while (transactionPool.isFull()) {
                     try {
                         transactionPool.wait();
@@ -44,7 +44,7 @@ public class TransactionProducer extends Thread {
     private Transaction getOneTransaction() {
         Random random = new Random();
         Transaction transaction = null; // 返回的交易
-        Account[] accounts = blockChain.getAccounts(); // 获取账户数组
+        Account[] accounts = netWork.getAccounts(); // 获取账户数组
 
         while (true) {
             // 随机获取两个账户A和B
@@ -60,6 +60,7 @@ public class TransactionProducer extends Thread {
             String bWalletAddress = bAccount.getWalletAddress();
 
             // 获取A可用的Utxo并计算余额
+            BlockChain blockChain = netWork.getBlockChain();
             UTXO[] aTrueUtxos = blockChain.getTrueUtxos(aWalletAddress);
             int aAmount = aAccount.getAmount(aTrueUtxos);
             // 如果A账户的余额为0，则无法构建交易，重新随机生成

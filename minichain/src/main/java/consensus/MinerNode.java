@@ -7,9 +7,7 @@ import utils.SHA256Util;
 import utils.SecurityUtil;
 
 import java.security.PublicKey;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 
 /**
  * 矿工线程
@@ -99,34 +97,27 @@ public class MinerNode extends Thread {
     public BlockBody getBlockBody(Transaction[] transactions) {
         assert transactions != null && transactions.length == MiniChainConfig.MAX_TRANSACTION_COUNT;
         //todo
-        int nodeCount = transactions.length;
-
-        Queue<String> hashStr = new LinkedList<>();
-
-        // 对每一个交易进行哈希
+        List<String> list = new ArrayList<>();
         for (Transaction transaction : transactions) {
-            hashStr.offer(SHA256Util.sha256Digest(transaction.toString()));
+            String txHash = SecurityUtil.sha256Digest(transaction.toString());
+            list.add(txHash);
+        }
+        // list大小为1时停止迭代
+        while (list.size() != 1) {
+            List<String> newList = new ArrayList<>();
+            for (int i = 0; i < list.size(); i += 2) {
+                String leftHash = list.get(i);
+                // 如果出现奇数个节点，即最后一个节点没有右节点与其构成一对，就将当前节点复制一份作为右节点
+                String rightHash = (i + 1 < list.size() ? list.get(i + 1) : leftHash);
+                String parentHash = SecurityUtil.sha256Digest(leftHash + rightHash);
+                newList.add(parentHash);
+            }
+            // 切换list，进行下一轮的计算
+            list = newList;
         }
 
-        while (nodeCount != 1) {
-            // 考虑奇数情况
-            if (nodeCount % 2 == 1) {
-                hashStr.offer(hashStr.peek());
-                nodeCount += 1;
-            }
-
-            nodeCount /= 2;
-            for (int i = 0; i < nodeCount; i++) {
-                String s1 = hashStr.poll();
-                String s2 = hashStr.poll();
-
-                hashStr.offer(SHA256Util.sha256Digest(s1 + s2));
-            }
-
-        }
-
-        BlockBody ret = new BlockBody(hashStr.poll(), transactions);
-        return ret;
+        BlockBody blockBody = new BlockBody(list.get(0), transactions);
+        return blockBody;
     }
 
     /**
