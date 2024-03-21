@@ -4,7 +4,9 @@ import config.MiniChainConfig;
 import data.*;
 import utils.MinerUtil;
 import utils.SHA256Util;
+import utils.SecurityUtil;
 
+import java.security.PublicKey;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
@@ -46,15 +48,43 @@ public class MinerNode extends Thread {
                 // 从交易池中获取一批次的交易
                 Transaction[] transactions = transactionPool.getAll();
 
+                // 对该交易的签名进行验签，验签失败则退出
+                if (!check(transactions)) {
+                    System.out.println("transaction error");
+                    System.exit(-1);
+                }
+
                 // 以交易为参数，调用getBlockBody方法
                 BlockBody blockBody = getBlockBody(transactions);
 
                 // 以blockBody为参数，调用mine方法
                 mine(blockBody);
 
+                // 输出所有账户的余额总数
+                System.out.println("The sum of all account amount: " + blockChain.getAllAccountAmount());
+
                 transactionPool.notify();
             }
         }
+    }
+
+    /**
+     * 矿工检查每笔交易是否正确，是否被篡改
+     * @param transactions
+     * @return
+     */
+    private boolean check(Transaction[] transactions) {
+        for (int i = 0; i < transactions.length; i++) {
+            Transaction transaction = transactions[i];
+            // 签名的数据是该交易的inUtxos和outUtxos
+            byte[] data = SecurityUtil.utxos2Bytes(transaction.getInUtxos(), transaction.getOutUtxos());
+            byte[] sign = transaction.getSendSign();
+            PublicKey publicKey = transaction.getSendPublicKey();
+            if (!SecurityUtil.verify(data, sign, publicKey)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

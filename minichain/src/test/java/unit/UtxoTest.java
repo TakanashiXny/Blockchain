@@ -1,59 +1,42 @@
-package consensus;
+package unit;
 
+import config.MiniChainConfig;
+import consensus.MinerNode;
+import consensus.TransactionProducer;
 import data.*;
+import org.junit.Before;
+import org.junit.Test;
 import utils.SecurityUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
-/**
- * 生成随机交易
- */
-public class TransactionProducer extends Thread {
-
+public class UtxoTest {
     private TransactionPool transactionPool;
-    private final BlockChain blockChain;
+    private BlockChain blockChain;
+    private TransactionProducer transactionProducer;
 
-    public TransactionProducer(TransactionPool transactionPool, BlockChain blockChain) {
-        this.transactionPool = transactionPool;
-        this.blockChain = blockChain;
-    }
+    @Test
+    public void transactionTest() {
+        transactionPool = new TransactionPool(MiniChainConfig.MAX_TRANSACTION_COUNT);
+        blockChain = new BlockChain();
+        transactionProducer = new TransactionProducer(transactionPool, blockChain);
+        MinerNode minerNode = new MinerNode(transactionPool, blockChain);
 
-    @Override
-    public void run() {
-        while (true) {
-            synchronized (transactionPool) {
-                while (transactionPool.isFull()) {
-                    try {
-                        transactionPool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                Transaction randomOne = getOneTransaction();
-                transactionPool.put(randomOne);
-                if (transactionPool.isFull()) {
-                    transactionPool.notify();
-                }
-            }
-        }
+        Transaction transaction = getOneTransaction();
+        transactionPool.put(transaction);
+        minerNode.run();
     }
 
     private Transaction getOneTransaction() {
-        Random random = new Random();
         Transaction transaction = null; // 返回的交易
         Account[] accounts = blockChain.getAccounts(); // 获取账户数组
 
         while (true) {
             // 随机获取两个账户A和B
-            Account aAccount = accounts[random.nextInt(accounts.length)];
-            Account bAccount = accounts[random.nextInt(accounts.length)];
-            // BTC不允许给自己转账
-            if (aAccount == bAccount) {
-                continue;
-            }
+            Account aAccount = accounts[0];
+            Account bAccount = accounts[1];
 
             // 获得钱包地址
             String aWalletAddress = aAccount.getWalletAddress();
@@ -68,7 +51,7 @@ public class TransactionProducer extends Thread {
             }
 
             // 随机生成交易数额 [1, aAmount]之间
-            int txAmount = random.nextInt(aAmount) + 1;
+            int txAmount = 10000;
             // 构建InUtxos和OutUtxo
             List<UTXO> inUtxoList = new ArrayList<>();
             List<UTXO> outUtxoList = new ArrayList<>();

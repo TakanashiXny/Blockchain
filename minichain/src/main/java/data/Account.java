@@ -11,7 +11,7 @@ public class Account {
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
 
-    public Account(PublicKey publicKey, PrivateKey privateKey) {
+    public Account() {
         KeyPair keyPair = SecurityUtil.secp256k1Generate();
         this.publicKey = keyPair.getPublic();
         this.privateKey = keyPair.getPrivate();
@@ -24,6 +24,8 @@ public class Account {
     public PrivateKey getPrivateKey() {
         return privateKey;
     }
+
+
 
     @Override
     public String toString() {

@@ -22,7 +22,7 @@ public class NetWork {
      */
     public NetWork() {
         transactionPool = new TransactionPool(MiniChainConfig.MAX_TRANSACTION_COUNT);
-        transactionProducer = new TransactionProducer(transactionPool);
+        transactionProducer = new TransactionProducer(transactionPool, blockChain);
         minerNode = new MinerNode(transactionPool, blockChain);
     }
 
