@@ -4,6 +4,7 @@ import config.MiniChainConfig;
 import consensus.MinerNode;
 import consensus.TransactionProducer;
 import data.*;
+import network.NetWork;
 import org.junit.Before;
 import org.junit.Test;
 import utils.SecurityUtil;
@@ -16,12 +17,15 @@ public class UtxoTest {
     private TransactionPool transactionPool;
     private BlockChain blockChain;
     private TransactionProducer transactionProducer;
+    private NetWork netWork;
 
     @Test
     public void transactionTest() {
         transactionPool = new TransactionPool(MiniChainConfig.MAX_TRANSACTION_COUNT);
+        NetWork netWork = new NetWork();
         blockChain = new BlockChain();
-        transactionProducer = new TransactionProducer(transactionPool, blockChain);
+
+        transactionProducer = new TransactionProducer(netWork);
         MinerNode minerNode = new MinerNode(transactionPool, blockChain);
 
         Transaction transaction = getOneTransaction();

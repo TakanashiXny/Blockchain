@@ -1,6 +1,7 @@
 package data;
 
 import config.MiniChainConfig;
+import network.NetWork;
 import utils.SHA256Util;
 import utils.SecurityUtil;
 
@@ -40,6 +41,7 @@ public class BlockChain {
                 ", you will see the hash value in next Block's preBlockHash field.");
         System.out.println();
         chain.add(genesisBlock);
+
     }
 
     /**
@@ -125,5 +127,9 @@ public class BlockChain {
             sumAmount += accounts[i].getAmount(trueUtxo);
         }
         return sumAmount;
+    }
+
+    public LinkedList<Block> getBlocks() {
+        return this.chain;
     }
 }

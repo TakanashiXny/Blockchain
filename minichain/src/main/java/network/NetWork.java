@@ -4,12 +4,15 @@ import config.MiniChainConfig;
 import consensus.MinerNode;
 import consensus.TransactionProducer;
 import data.*;
+import spv.SpvPeer;
 import utils.SecurityUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -19,6 +22,7 @@ import java.util.Random;
 public class NetWork {
 
     private final Account[] accounts;
+    private final SpvPeer[] spvPeers;
     private TransactionPool transactionPool;
     private TransactionProducer transactionProducer;
     private final BlockChain blockChain;
@@ -33,10 +37,12 @@ public class NetWork {
         // 初始化用户和spv节点，并注册到网络中
         System.out.println("\naccounts and spvPeers config");
         accounts = new Account[MiniChainConfig.ACCOUNT_NUM];
+        spvPeers = new SpvPeer[MiniChainConfig.ACCOUNT_NUM];
         for (int i = 0; i < MiniChainConfig.ACCOUNT_NUM; i++) {
             accounts[i] = new Account();
             System.out.println("network register new account: " + accounts[i]);
             // 每个账户创建一个spv轻节点，并获得与网络的连接
+            spvPeers[i] = new SpvPeer(accounts[i], this);
         }
 
         // 创建交易池，网络中会有交易涌入
@@ -57,8 +63,15 @@ public class NetWork {
 
         System.out.println("\nnetwork start!\n");
 
+        // 将创世区块广播出去
+        minerPeer.boardcast(blockChain.getNewestBlock());
+
         // 发送神秘大礼：在第一个区块放入一些utxo，让所有账户拥有一笔金额
         theyHavaADayDream();
+    }
+
+    public SpvPeer[] getSpvPeers() {
+        return spvPeers;
     }
 
     /**
@@ -90,16 +103,19 @@ public class NetWork {
         Block block = new Block(blockHeader, blockBody);
         // 添加到链中
         blockChain.addNewBlock(block);
+
+        // 通过网络获取矿工结点，然后将初始区块广播出去
+        minerPeer.boardcast(block);
     }
 
 
     /**
      * 启动挖矿线程和生成随机交易的线程
      */
-//    public void start() {
-//        transactionProducer.start();
-//        minerNode.start();
-//    }
+    public void start() {
+        transactionProducer.start();
+        minerPeer.start();
+    }
 
     public TransactionPool getTransactionPool() {
         return this.transactionPool;
@@ -110,6 +126,41 @@ public class NetWork {
     }
 
     public BlockChain getBlockChain() {
-        return blockChain;
+        return this.blockChain;
+    }
+
+    public MinerPeer getMinerPeer() {
+        return this.minerPeer;
+    }
+
+    /**
+     * 在最新区块中查找和某钱包地址有关的交易
+     * @param walletAddress
+     * @return
+     */
+    public List<Transaction> getTransactionsInLatestBlock(String walletAddress) {
+        List<Transaction> list = new ArrayList<>();
+        Block block = blockChain.getNewestBlock();
+        // 遍历所有区块所有交易所有的UTXO，查看钱包地址是否相符合
+        for (Transaction transaction : block.getBlockBody().getTransactions()) {
+            boolean have = false;
+            for (UTXO utxo : transaction.getInUtxos()) {
+                if (utxo.getWalletAddress().equals(walletAddress)) {
+                    list.add(transaction);
+                    have = true;
+                    break;
+                }
+            }
+            if (have) {
+                continue;
+            }
+            for (UTXO utxo : transaction.getOutUtxos()) {
+                if (utxo.getWalletAddress().equals(walletAddress)) {
+                    list.add(transaction);
+                    break;
+                }
+            }
+        }
+        return list;
     }
 }
