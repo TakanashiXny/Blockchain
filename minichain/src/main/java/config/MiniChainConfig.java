@@ -8,7 +8,7 @@ package config;
  */
 public class MiniChainConfig {
 
-    public static final int DIFFICULTY = 4;
+    public static final int DIFFICULTY = 3;
 
     public static final int MAX_TRANSACTION_COUNT = 1;
 
