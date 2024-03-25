@@ -27,8 +27,6 @@ public class NetWork {
     private TransactionProducer transactionProducer;
     private final BlockChain blockChain;
     private MinerPeer minerPeer;
-
-
     /**
      * 系统中几个主要成员的初始化
      */
