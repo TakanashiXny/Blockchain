@@ -55,7 +55,7 @@ public class NetWork {
 
         // 初始化一条区块链，后续由矿工节点维护，可当作这条链在网络中存储与矿工节点
         System.out.println("\nblockChain config...");
-        blockChain = new BlockChain();
+        blockChain = new BlockChain(this);
 
         // 创建矿工节点，维持与网络的连接
         System.out.println("\nminerPeer config...");

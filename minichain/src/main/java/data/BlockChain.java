@@ -20,27 +20,21 @@ import java.util.Set;
 public class BlockChain {
 
     private final LinkedList<Block> chain = new LinkedList<>();
-    private final Account[] accounts;
+    private final NetWork netWork;
 
-    public BlockChain() {
-        this.accounts = new Account[MiniChainConfig.ACCOUNT_NUM];
-        for (int i = 0; i < accounts.length; i++) {
-            accounts[i] = new Account();
-        }
+    public BlockChain(NetWork netWork) {
+       this.netWork = netWork;
 
-        // 在创世区块中为每一个账户分配一定金额的utxo，便于后面交易的进行
-        Transaction[] transactions = genesisTransaction(accounts);
-
-        BlockHeader genesisBlockHeader = new BlockHeader(null, null,
-                                                            Math.abs(new Random().nextLong()));
-
-        BlockBody genesisBlockBody = new BlockBody(null, transactions);
+        // 创世区块交易为空
+        BlockHeader genesisBlockHeader = new BlockHeader(null, null, Math.abs(new Random().nextLong()));
+        BlockBody genesisBlockBody = new BlockBody(null, new Transaction[]{});
         Block genesisBlock = new Block(genesisBlockHeader, genesisBlockBody);
+
         System.out.println("Create the genesis Block! ");
-        System.out.println("And the hash of genesis Block is : " + SHA256Util.sha256Digest(genesisBlock.toString()) +
+        System.out.println("And the hash of genesis Block is : " + SecurityUtil.sha256Digest(genesisBlock.toString()) +
                 ", you will see the hash value in next Block's preBlockHash field.");
         System.out.println();
-        chain.add(genesisBlock);
+        this.chain.add(genesisBlock);
 
     }
 
@@ -116,11 +110,8 @@ public class BlockChain {
         return chain.peekLast();
     }
 
-    public Account[] getAccounts() {
-        return accounts;
-    }
-
     public int getAllAccountAmount() {
+        Account[] accounts = netWork.getAccounts();
         int sumAmount = 0;
         for (int i = 0; i < accounts.length; i++) {
             UTXO[] trueUtxo = getTrueUtxos(accounts[i].getWalletAddress());

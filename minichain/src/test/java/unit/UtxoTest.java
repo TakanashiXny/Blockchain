@@ -23,7 +23,7 @@ public class UtxoTest {
     public void transactionTest() {
         transactionPool = new TransactionPool(MiniChainConfig.MAX_TRANSACTION_COUNT);
         NetWork netWork = new NetWork();
-        blockChain = new BlockChain();
+        blockChain = new BlockChain(netWork);
 
         transactionProducer = new TransactionProducer(netWork);
         MinerNode minerNode = new MinerNode(transactionPool, blockChain);
@@ -35,10 +35,9 @@ public class UtxoTest {
 
     private Transaction getOneTransaction() {
         Transaction transaction = null; // 返回的交易
-        Account[] accounts = blockChain.getAccounts(); // 获取账户数组
+        Account[] accounts = netWork.getAccounts(); // 获取账户数组
 
         while (true) {
-            // 随机获取两个账户A和B
             Account aAccount = accounts[0];
             Account bAccount = accounts[1];
 
@@ -50,9 +49,6 @@ public class UtxoTest {
             UTXO[] aTrueUtxos = blockChain.getTrueUtxos(aWalletAddress);
             int aAmount = aAccount.getAmount(aTrueUtxos);
             // 如果A账户的余额为0，则无法构建交易，重新随机生成
-            if (aAmount == 0) {
-                continue;
-            }
 
             // 随机生成交易数额 [1, aAmount]之间
             int txAmount = 10000;
