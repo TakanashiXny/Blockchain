@@ -21,8 +21,8 @@ import java.util.Random;
  */
 public class NetWork {
 
-    private final Account[] accounts;
-    private final SpvPeer[] spvPeers;
+    private final List<Account> accounts = new ArrayList<>();
+    private final SpvPeer spvPeer;
     private TransactionPool transactionPool;
     private TransactionProducer transactionProducer;
     private final BlockChain blockChain;
@@ -36,14 +36,12 @@ public class NetWork {
 
         // 初始化用户和spv节点，并注册到网络中
         System.out.println("\naccounts and spvPeers config");
-        accounts = new Account[MiniChainConfig.ACCOUNT_NUM];
-        spvPeers = new SpvPeer[MiniChainConfig.ACCOUNT_NUM];
         for (int i = 0; i < MiniChainConfig.ACCOUNT_NUM; i++) {
-            accounts[i] = new Account();
-            System.out.println("network register new account: " + accounts[i]);
-            // 每个账户创建一个spv轻节点，并获得与网络的连接
-            spvPeers[i] = new SpvPeer(accounts[i], this);
+            Account a = new Account();
+            accounts.add(a);
+            System.out.println("network register new account: " + accounts.get(i));
         }
+        spvPeer = new SpvPeer(null, this);
 
         // 创建交易池，网络中会有交易涌入
         System.out.println("\ntransactionPool config...");
@@ -70,8 +68,8 @@ public class NetWork {
         theyHavaADayDream();
     }
 
-    public SpvPeer[] getSpvPeers() {
-        return spvPeers;
+    public SpvPeer getSpvPeer() {
+        return spvPeer;
     }
 
     /**
@@ -79,9 +77,9 @@ public class NetWork {
      */
     private void theyHavaADayDream() {
         // 在创世区块中为每一个账户分配一定金额的utxo，便于后面交易的进行
-        UTXO[] outUtxos = new UTXO[accounts.length];
-        for (int i = 0; i < accounts.length; i++) {
-            outUtxos[i] = new UTXO(accounts[i].getWalletAddress(), MiniChainConfig.INIT_AMOUNT, accounts[i].getPublicKey());
+        UTXO[] outUtxos = new UTXO[accounts.size()];
+        for (int i = 0; i < accounts.size(); i++) {
+            outUtxos[i] = new UTXO(accounts.get(i).getWalletAddress(), MiniChainConfig.INIT_AMOUNT, accounts.get(i).getPublicKey());
         }
         // 神秘的公私钥
         KeyPair dayDreamKeyPair = SecurityUtil.secp256k1Generate();
@@ -113,15 +111,15 @@ public class NetWork {
      * 启动挖矿线程和生成随机交易的线程
      */
     public void start() {
-        transactionProducer.start();
         minerPeer.start();
+        spvPeer.start();
     }
 
     public TransactionPool getTransactionPool() {
         return this.transactionPool;
     }
 
-    public Account[] getAccounts() {
+    public List<Account> getAccounts() {
         return this.accounts;
     }
 
@@ -162,5 +160,40 @@ public class NetWork {
             }
         }
         return list;
+    }
+
+    /**
+     * 创建一个钱包账户
+     * @return
+     */
+    public Account create_account() {
+        Account account = new Account();
+        accounts.add(account);
+        UTXO[] outUtxos = new UTXO[1];
+        outUtxos[0] = new UTXO(account.getWalletAddress(), MiniChainConfig.INIT_AMOUNT, account.getPublicKey());
+        // 神秘的公私钥
+        KeyPair dayDreamKeyPair = SecurityUtil.secp256k1Generate();
+        PublicKey dayDreamPublicKey = dayDreamKeyPair.getPublic();
+        PrivateKey dayDreamPrivateKey = dayDreamKeyPair.getPrivate();
+        // 神秘的签名内容
+        byte[] sign = SecurityUtil.signature("Everything in the dream".getBytes(StandardCharsets.UTF_8), dayDreamPrivateKey);
+        // 构造交易
+        Transaction transaction = new Transaction(new UTXO[]{}, outUtxos, sign, dayDreamPublicKey, System.currentTimeMillis());
+        // 交易数组只有这一个交易
+        Transaction[] transactions = {transaction};
+        // 前一个区块的哈希
+        String preBlockHash = SecurityUtil.sha256Digest(blockChain.getNewestBlock().toString());
+        // 因为本区块只有一个交易，所以merkle根哈希即为该交易的哈希
+        String merkleRootHash = SecurityUtil.sha256Digest(transaction.toString());
+        // 构建区块
+        BlockHeader blockHeader = new BlockHeader(preBlockHash, merkleRootHash, Math.abs(new Random().nextLong()));
+        BlockBody blockBody = new BlockBody(merkleRootHash, transactions);
+        Block block = new Block(blockHeader, blockBody);
+        // 添加到链中
+        blockChain.addNewBlock(block);
+
+        // 通过网络获取矿工结点，然后将初始区块广播出去
+        minerPeer.boardcast(block);
+        return account;
     }
 }

@@ -7,24 +7,23 @@ import utils.SecurityUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * 生成随机交易
  */
 public class TransactionProducer extends Thread {
 
-    private final NetWork netWork;
+    private final NetWork network;
 
     public TransactionProducer(NetWork netWork) {
-        this.netWork = netWork;
+        this.network = netWork;
     }
 
     @Override
     public void run() {
         while (true) {
-            synchronized (netWork.getTransactionPool()) {
-                TransactionPool transactionPool = netWork.getTransactionPool();
+            synchronized (network.getTransactionPool()) {
+                TransactionPool transactionPool = network.getTransactionPool();
                 while (transactionPool.isFull()) {
                     try {
                         transactionPool.wait();
@@ -44,12 +43,13 @@ public class TransactionProducer extends Thread {
     private Transaction getOneTransaction() {
         Random random = new Random();
         Transaction transaction = null; // 返回的交易
-        Account[] accounts = netWork.getAccounts(); // 获取账户数组
+        List<Account> accounts = network.getAccounts(); // 获取账户数组
+        int size = accounts.size();
 
         while (true) {
             // 随机获取两个账户A和B
-            Account aAccount = accounts[random.nextInt(accounts.length)];
-            Account bAccount = accounts[random.nextInt(accounts.length)];
+            Account aAccount = accounts.get(random.nextInt(size));
+            Account bAccount = accounts.get(random.nextInt(size));
             // BTC不允许给自己转账
             if (aAccount == bAccount) {
                 continue;
@@ -60,7 +60,7 @@ public class TransactionProducer extends Thread {
             String bWalletAddress = bAccount.getWalletAddress();
 
             // 获取A可用的Utxo并计算余额
-            BlockChain blockChain = netWork.getBlockChain();
+            BlockChain blockChain = network.getBlockChain();
             UTXO[] aTrueUtxos = blockChain.getTrueUtxos(aWalletAddress);
             int aAmount = aAccount.getAmount(aTrueUtxos);
             // 如果A账户的余额为0，则无法构建交易，重新随机生成

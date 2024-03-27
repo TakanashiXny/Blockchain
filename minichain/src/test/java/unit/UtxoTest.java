@@ -35,11 +35,11 @@ public class UtxoTest {
 
     private Transaction getOneTransaction() {
         Transaction transaction = null; // 返回的交易
-        Account[] accounts = netWork.getAccounts(); // 获取账户数组
+        List<Account> accounts = netWork.getAccounts(); // 获取账户数组
 
         while (true) {
-            Account aAccount = accounts[0];
-            Account bAccount = accounts[1];
+            Account aAccount = accounts.get(0);
+            Account bAccount = accounts.get(1);
 
             // 获得钱包地址
             String aWalletAddress = aAccount.getWalletAddress();

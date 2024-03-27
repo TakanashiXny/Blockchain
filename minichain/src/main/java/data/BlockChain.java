@@ -9,10 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 区块链的类抽象，创建该对象时会自动生成创世纪块，加入区块链中
@@ -111,11 +108,11 @@ public class BlockChain {
     }
 
     public int getAllAccountAmount() {
-        Account[] accounts = netWork.getAccounts();
+        List<Account> accounts = netWork.getAccounts();
         int sumAmount = 0;
-        for (int i = 0; i < accounts.length; i++) {
-            UTXO[] trueUtxo = getTrueUtxos(accounts[i].getWalletAddress());
-            sumAmount += accounts[i].getAmount(trueUtxo);
+        for (int i = 0; i < accounts.size(); i++) {
+            UTXO[] trueUtxo = getTrueUtxos(accounts.get(i).getWalletAddress());
+            sumAmount += accounts.get(i).getAmount(trueUtxo);
         }
         return sumAmount;
     }
