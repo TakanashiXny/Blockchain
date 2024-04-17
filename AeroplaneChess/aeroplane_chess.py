@@ -16,7 +16,7 @@ print("eth connect:", w3.is_connected())
 
 destination     = 20   # 目的地位置
 dice            = 6    # 骰子
-player_num      = 4    # 玩家数量
+player_num      = 3    # 玩家数量
 player_name     = ''
 account_id      = -1
 

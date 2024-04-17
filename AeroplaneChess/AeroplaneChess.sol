@@ -112,19 +112,53 @@ contract AeroplaneChess {
         require(!gameover);
 
         // 判断是否是当前用户轮次
-        
+        // 获取当前用户
+        uint currentPlayerId = playerId[msg.sender];
+        if (currentPlayerId != nextPlayerId) {
+            return;
+        }
+        Player memory currentPlayer = players[currentPlayerId];
         // 获取当前应走的步数
+        uint step = randomDice(_str);
+        players[currentPlayerId].step = step;
 
         // 起飞需要掷出6
+        if (currentPlayer.position == 0 && step != 6) {
+            // 游戏运行次数+1
+            times++;
+            players[currentPlayerId].round++;
+            nextPlayerId = (nextPlayerId + 1) % currentPlayerCount;
+            return;
+        }
 
         // 起飞后无要求
-
-            // 达到终点游戏结束
-
+        uint dist = destination - currentPlayer.position; // 距离终点的距离
+        if (dist >= step) {
+            players[currentPlayerId].position += step;
+        } else {
             // 超过终点需要往回走
+            players[currentPlayerId].position += (dist - (step - dist));
+        }
+        // 达到终点游戏结束
+        if (currentPlayer.position == destination) {
+            gameover = true;
+            gamestart = false;
+            winnerId = currentPlayerId;
+        }
 
-            // 若是撞到别人的飞机，则将其撞回原点
+            
+
+        // 若是撞到别人的飞机，则将其撞回原点
+        for (uint i = 0; i < currentPlayerCount; i++) {
+            if (players[i].position == players[currentPlayerId].position && i != currentPlayerId) {
+                players[i].position = 0;
+                break;
+            }
+        }
 
         // 游戏运行次数+1
+        times++;
+        players[currentPlayerId].round++;
+        nextPlayerId = (nextPlayerId + 1) % currentPlayerCount;
     }
 }
