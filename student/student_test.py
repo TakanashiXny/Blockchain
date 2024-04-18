@@ -13,7 +13,8 @@ print_info("\n[Test compile_and_deploy]")
 try:
     student_contract = compile_and_deploy("StudentContract") # 编译并部署合约
     add_point(20, "compile_and_deploy StudentContract success!")
-except:
+except Exception as e:
+    print(e)
     print_error("compile_and_deploy StudentContract error!")
 
 num = 10
