@@ -47,12 +47,7 @@ contract StudentContract {
 
     function exist_by_id(uint256 _id) public view returns (bool isExist) {
         // TODO:查找系统中是否存在某个学号
-        for (uint i = 0; i < count; i++) {
-            if (students[i].id == _id) {
-                return true;
-            }
-        }
-        return false;
+        return isExistMapping[_id];
     }
 
     function select_count() public view returns (uint256 _count) {
@@ -62,16 +57,8 @@ contract StudentContract {
 
     function select_all_id() public view returns (uint256[] memory _ids) {
         // TODO:查找系统中所有的学号
-        uint256 countNonZero = 0;
-        // 先计算有效的学号数量
-        for (uint256 i = 0; i < ids.length; i++) {
-            if (ids[i] != 0) {
-                countNonZero++;
-            }
-        }
-
         // 创建具有正确长度的内存数组
-        _ids = new uint256[](countNonZero);
+        _ids = new uint256[](count);
 
         uint256 index = 0;
         // 将有效的学号添加到内存数组中
