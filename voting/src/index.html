@@ -1,73 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Pete's Pet Shop</title>
-
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet" />
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>区块链投票系统</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-inverse">
     <div class="container">
-      <div class="row">
-        <div class="col-xs-12 col-sm-8 col-sm-push-2">
-          <h1 class="text-center">Pete's Pet Shop</h1>
-          <hr />
-          <br />
-        </div>
-      </div>
-
-      <div id="petsRow" class="row">
-        <!-- PETS LOAD HERE -->
-      </div>
-    </div>
-
-    <div id="petTemplate" style="display: none">
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="panel panel-default panel-pet">
-          <div class="panel-heading">
-            <h3 class="panel-title">Scrappy</h3>
-          </div>
-          <div class="panel-body">
-            <img
-              alt="140x140"
-              data-src="holder.js/140x140"
-              class="img-rounded img-center"
-              style="width: 100%"
-              src="https://animalso.com/wp-content/uploads/2017/01/Golden-Retriever_6.jpg"
-              data-holder-rendered="true"
-            />
-            <br /><br />
-            <strong>Breed</strong>:
-            <span class="pet-breed">Golden Retriever</span><br />
-            <strong>Age</strong>: <span class="pet-age">3</span><br />
-            <strong>Location</strong>:
-            <span class="pet-location">Warren, MI</span><br /><br />
-            <button class="btn btn-default btn-adopt" type="button" data-id="0">
-              Adopt
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
             </button>
-          </div>
+            <a class="navbar-brand" href="#">Voting System</a>
         </div>
-      </div>
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="#" onclick="showVotes()">查看投票</a></li>
+                <li><a href="#" onclick="showCreateVote()">创建投票</a></li>
+            </ul>
+        </div><!--/.nav-collapse -->
     </div>
+</nav>
 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script> -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/web3.min.js"></script>
-    <script src="js/truffle-contract.js"></script>
-    <script src="js/app.js"></script>
-  </body>
+<div class="container" id="showVotesPage">
+    <div class="row">
+        <div class="col-xs-12">
+            <h1 class="text-center">欢迎来到投票系统，看看这些投票吧</h1>
+            <hr>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>投票名称</th>
+                    <th>创建者账户</th>
+                    <th>投票结束时间</th>
+                    <th>成为候选人</th>
+                    <th>参与投票</th>
+                </tr>
+                </thead>
+                <tbody id="votesTable">
+                <!-- Votes will load here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="container hide" id="createVotePage">
+    <div class="row">
+        <div class="col-xs-12">
+            <h1 class="text-center">来发布一个投票吧</h1>
+            <hr>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-sm-offset-3">
+            <form id="createVoteForm">
+                <div class="form-group">
+                    <label for="voteName">投票名称</label>
+                    <input type="text" class="form-control" id="voteName" placeholder="输入投票名称">
+                </div>
+                <div class="form-group">
+                    <label for="creatorAddress">创建者账户</label>
+                    <input type="text" class="form-control" id="creatorAddress" placeholder="输入创建者账户">
+                </div>
+                <div class="form-group">
+                    <label for="endTime">结束时间</label>
+                    <input type="datetime-local" class="form-control" id="endTime">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">创建</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/web3.min.js"></script>
+<script src="js/truffle-contract.js"></script>
+<script src="js/app.js"></script>
+<script>
+    function showVotes() {
+        document.getElementById('showVotesPage').classList.remove('hide');
+        document.getElementById('createVotePage').classList.add('hide');
+    }
+
+    function showCreateVote() {
+        document.getElementById('showVotesPage').classList.add('hide');
+        document.getElementById('createVotePage').classList.remove('hide');
+    }
+</script>
+</body>
 </html>
