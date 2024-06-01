@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.7.0;
+pragma solidity >=0.4.16 <0.9.0;
 
-contract VotingContract {
+contract Voting {
     struct Candidate {
         address addr;
         uint256 votes;
@@ -92,11 +92,19 @@ contract VotingContract {
         votes[_voteIndex].winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
 
         // 发送奖励给获胜的候选人（这里使用了简化的方式，实际中应该使用安全的支付方式）
-        payable(voteToCandidates[_voteIndex][winningCandidateIndex].addr).transfer(address(this).balance);
+        // address payable winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
+        // uint256 prize = address(this).balance;
+        // winner.transfer(prize);
+        address payable winner = address(uint160(votes[_voteIndex].winner));
+        uint256 prize = address(this).balance;
+        winner.transfer(prize);
 
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
     }
-
-    receive() external payable {}
+    
+    function() external payable {
+        // This is the fallback function, used to receive Ether
+    }
+    // receive() external payable {}
 }
