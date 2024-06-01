@@ -3,62 +3,23 @@ App = {
   contracts: {},
 
   init: async function () {
-    // Load pets.
-    $.getJSON("../pets.json", function (data) {
-      var petsRow = $("#petsRow");
-      var petTemplate = $("#petTemplate");
-
-      for (i = 0; i < data.length; i++) {
-        petTemplate.find(".panel-title").text(data[i].name);
-        petTemplate.find("img").attr("src", data[i].picture);
-        petTemplate.find(".pet-breed").text(data[i].breed);
-        petTemplate.find(".pet-age").text(data[i].age);
-        petTemplate.find(".pet-location").text(data[i].location);
-        petTemplate.find(".btn-adopt").attr("data-id", data[i].id);
-
-        petsRow.append(petTemplate.html());
-      }
-    });
-
     return await App.initWeb3();
   },
 
-  /*
   initWeb3: async function () {
-    // Modern dapp browsers...
+    // Initialize web3 and set the provider to the appropriate network
     if (window.ethereum) {
       App.web3Provider = window.ethereum;
       try {
         // Request account access
         await window.ethereum.enable();
       } catch (error) {
-        // User denied account access...
-        console.error("User denied account access")
+        console.error("User denied account access");
       }
-    }
-    // Legacy dapp browsers...
-    else if (window.web3) {
+    } else if (window.web3) {
       App.web3Provider = window.web3.currentProvider;
-    }
-    // If no injected web3 instance is detected, fall back to Ganache
-    else {
-      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
-    }
-    web3 = new Web3(App.web3Provider);
-
-    return App.initContract();
-  },
-*/
-
-  initWeb3: async function () {
-    // is there an injected web3 instance?
-    if (typeof web3 !== "undefined") {
-      App.web3Provider = web3.currentProvider;
     } else {
-      // If no injected web3 instance is detected, fall back to Ganache
-      App.web3Provider = new Web3.providers.HttpProvider(
-        "http://localhost:7545"
-      );
+      App.web3Provider = new Web3.providers.HttpProvider("http://localhost:7545");
     }
     web3 = new Web3(App.web3Provider);
 
@@ -66,84 +27,94 @@ App = {
   },
 
   initContract: function () {
-    // 加载Adoption.json，保存了Adoption的ABI（接口说明）信息及部署后的网络（地址）信息，
-    // 他在编译合约的时候生成ABI，在部署的时候追加网络信息
-    $.getJSON("Adoption.json", function (data) {
-      // 用Adoption.json数据创建一个可交互的TruffleContract合约实例。
-      var AdoptionArtifact = data;
-      App.contracts.Adoption = TruffleContract(AdoptionArtifact);
-
-      // Set the provider for our contract
-      App.contracts.Adoption.setProvider(App.web3Provider);
-
-      // Use our contract to retrieve and mark the adopted pets
-      return App.markAdopted();
+    // Load VotingContract.json and initiate the contract
+    $.getJSON("VotingContract.json", function (data) {
+      var VotingContractArtifact = data;
+      App.contracts.VotingContract = TruffleContract(VotingContractArtifact);
+      App.contracts.VotingContract.setProvider(App.web3Provider);
     });
 
     return App.bindEvents();
   },
 
   bindEvents: function () {
-    $(document).on("click", ".btn-adopt", App.handleAdopt);
-  },
-
-  markAdopted: function () {
-    var adoptionInstance;
-
-    App.contracts.Adoption.deployed()
-      .then(function (instance) {
-        adoptionInstance = instance;
-
-        // 调用合约的getAdopters(), 用call读取信息而不用消耗gas
-        return adoptionInstance.getAdopters.call();
-      })
-      .then(function (adopters) {
-        for (i = 0; i < adopters.length; i++) {
-          if (adopters[i] !== "0x0000000000000000000000000000000000000000") {
-            $(".panel-pet")
-              .eq(i)
-              .find("button")
-              .text("Success")
-              .attr("disabled", true);
-          }
-        }
-      })
-      .catch(function (err) {
-        console.log(err.message);
-      });
-  },
-
-  handleAdopt: function (event) {
-    event.preventDefault();
-
-    var petId = parseInt($(event.target).data("id"));
-
-    var adoptionInstance;
-
-    // 获取用户账号
-    web3.eth.getAccounts(function (error, accounts) {
-      if (error) {
-        console.log(error);
-      }
-
-      var account = accounts[0];
-
-      App.contracts.Adoption.deployed()
-        .then(function (instance) {
-          adoptionInstance = instance;
-
-          // Execute adopt as a transaction by sending account
-          // 发送交易领养宠物
-          return adoptionInstance.adopt(petId, { from: account });
-        })
-        .then(function (result) {
-          return App.markAdopted();
-        })
-        .catch(function (err) {
-          console.log(err.message);
-        });
+    // Bind click event for creating vote button
+    $(document).on("click", "#createVoteBtn", App.handleCreateVote);
+    // Bind click event for join vote button
+    $(document).on("click", "#join", function () {
+      var voteIndex = $(this).data("voteIndex");
+      App.joinVote(voteIndex);
+    });
+    // Bind click event for vote button
+    $(document).on("click", "#vote", function () {
+      var voteIndex = $(this).data("voteIndex");
+      App.showCandidatesModal(voteIndex);
     });
   },
+
+  handleCreateVote: function (event) {
+    event.preventDefault();
+    var voteName = $("#voteName").val();
+    var maxVoters = $("#maxVoters").val();
+    var endTime = new Date($("#endTime").val()).getTime() / 1000;
+
+    App.contracts.VotingContract.deployed().then(function (instance) {
+      return instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0] });
+    }).then(function (result) {
+      console.log("Vote created successfully!");
+      $("#createVoteModal").modal("hide");
+      // Refresh votes display after creating a vote
+      App.displayVotes();
+    }).catch(function (err) {
+      console.error(err);
+    });
+  },
+
+  joinVote: function (voteIndex) {
+    console.log("Joining vote at index", voteIndex);
+    $(".btn-join").eq(voteIndex).prop("disabled", true);
+    // Implement logic for joining vote in the contract
+  },
+
+  showCandidatesModal: function (voteIndex) {
+    console.log("Showing candidates for vote at index", voteIndex);
+    $(".btn-vote").eq(voteIndex).prop("disabled", true);
+    // Implement logic for showing candidates modal in the contract
+  },
+
+  displayVotes: function () {
+    App.contracts.VotingContract.deployed().then(function (instance) {
+      return instance.getVotes();
+    }).then(function (votes) {
+      var votesTable = $("#votesTable");
+      var historyTable = $("#historyTable");
+      votesTable.empty();
+      for (var i = 0; i < votes.length; i++) {
+        var vote = votes[i];
+        var endTime = new Date(vote.endTime * 1000).toLocaleString();
+        var row = $("<tr>");
+        row.append("<td>" + vote.name + "</td>");
+        row.append("<td>" + vote.creator + "</td>");
+        row.append("<td>" + endTime + "</td>");
+
+        var joinButton = $("<button id='join' class='btn btn-primary btn-join'>Join</button>");
+        joinButton.data("voteIndex", i);
+        row.append($("<td>").append(joinButton));
+
+        var voteButton = $("<button id='vote' class='btn btn-success btn-vote'>Vote</button>");
+        voteButton.data("voteIndex", i);
+        row.append($("<td>").append(voteButton));
+
+        if (vote.closed) {
+          historyTable.append(row); // Move to history table if vote is closed
+        } else {
+          votesTable.append(row); // Otherwise, keep in the votes table
+        }
+      }
+    }).catch(function (err) {
+      console.error(err);
+    });
+  }
 };
 
 $(function () {

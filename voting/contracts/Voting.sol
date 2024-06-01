@@ -21,6 +21,10 @@ contract Voting {
     Vote[] public votes;
     mapping(uint256 => Candidate[]) public voteToCandidates;
 
+    event NewVote(uint256 indexed voteIndex, address creator, string name, uint256 maxVoters, uint256 endTime);
+    event NewCandidate(uint256 indexed voteIndex, address candidateAddr);
+    event VoteClosed(uint256 indexed voteIndex, address winner);
+
     function createVote(string memory _name, uint256 _max_voters, uint256 _endTime) public returns (uint256) {
         require(_endTime > block.timestamp, "End time must be in the future");
 
@@ -37,6 +41,7 @@ contract Voting {
         });
         votes.push(newVote);
 
+        emit NewVote(votes.length - 1, msg.sender, _name, _max_voters, _endTime);
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
 
@@ -46,6 +51,8 @@ contract Voting {
 
         voteToCandidates[_voteIndex].push(Candidate(_addr, 0));
         votes[_voteIndex].candidateNum++;
+
+        emit NewCandidate(_voteIndex, _addr);
     }
 
     function vote(uint256 _voteIndex, uint256 _candidateIndex) public returns (bool) {
@@ -59,6 +66,7 @@ contract Voting {
         // 检查是否到达指定的投票人数
         if (votes[_voteIndex].totalVoters >= votes[_voteIndex].maxVoters) {
             endVote(_voteIndex);
+            
             return true;
         } else {
             return false;
@@ -101,6 +109,8 @@ contract Voting {
 
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
+
+        emit VoteClosed(_voteIndex, winner);
     }
     
     function() external payable {
