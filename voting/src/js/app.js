@@ -50,6 +50,7 @@ App = {
       var voteIndex = $(this).data("voteIndex");
       App.showCandidatesModal(voteIndex);
     });
+    $(document).on("click", "#showVotesLink", App.displayVotes);
   },
 
   handleCreateVote: function (event) {
@@ -64,7 +65,7 @@ App = {
       console.log(`The index of the vote: ${result}`);
       $("#createVoteModal").modal("hide");
       // Refresh votes display after creating a vote
-      App.displayVotes();
+      // App.displayVotes();
     }).catch(function (err) {
       console.error(err);
     });
@@ -83,34 +84,57 @@ App = {
   },
 
   displayVotes: function () {
+    var votesTable = $("#votesTable");
+    var historyTable = $("#historyTable");
+    votesTable.empty();
+    historyTable.empty();
+
     App.contracts.Voting.deployed().then(function (instance) {
-      return instance.getVotes.call();
-    }).then(function (votes) {
-      var votesTable = $("#votesTable");
-      var historyTable = $("#historyTable");
-      votesTable.empty();
-      for (var i = 0; i < votes.length; i++) {
-        var vote = votes[i];
-        var endTime = new Date(vote.endTime * 1000).toLocaleString();
-        var row = $("<tr>");
-        row.append("<td>" + vote.name + "</td>");
-        row.append("<td>" + vote.creator + "</td>");
-        row.append("<td>" + endTime + "</td>");
+      instance.NewVote({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
+        if (!error) {
+          events.forEach(function (event) {
+            var { voteIndex, creator, name, maxVoters, endTime } = event.args;
+            endTime = new Date(endTime.toNumber() * 1000).toLocaleString();
 
-        var joinButton = $("<button id='join' class='btn btn-primary btn-join'>Join</button>");
-        joinButton.data("voteIndex", i);
-        row.append($("<td>").append(joinButton));
+            var row = $("<tr>");
+            row.append("<td>" + name + "</td>");
+            row.append("<td>" + creator + "</td>");
+            row.append("<td>" + endTime + "</td>");
 
-        var voteButton = $("<button id='vote' class='btn btn-success btn-vote'>Vote</button>");
-        voteButton.data("voteIndex", i);
-        row.append($("<td>").append(voteButton));
+            var joinButton = $("<button class='btn btn-primary btn-join'>Join</button>");
+            joinButton.data("voteIndex", voteIndex.toNumber());
+            row.append($("<td>").append(joinButton));
 
-        if (vote.closed) {
-          historyTable.append(row); // Move to history table if vote is closed
-        } else {
-          votesTable.append(row); // Otherwise, keep in the votes table
+            var voteButton = $("<button class='btn btn-success btn-vote'>Vote</button>");
+            voteButton.data("voteIndex", voteIndex.toNumber());
+            row.append($("<td>").append(voteButton));
+
+            votesTable.append(row);
+          });
         }
-      }
+      });
+
+      // instance.VoteClosed({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
+      //   if (!error) {
+      //     events.forEach(function (event) {
+      //       var { voteIndex, winner } = event.args;
+
+      //       $("#votesTable tr").each(function () {
+      //         var row = $(this);
+      //         var idx = row.find(".btn-join").data("voteIndex");
+
+      //         if (idx === voteIndex.toNumber()) {
+      //           var closedRow = row.clone();
+      //           closedRow.find("td:last").remove(); // Remove join button cell
+      //           closedRow.find("td:last").remove(); // Remove vote button cell
+      //           closedRow.append("<td>" + winner + "</td>");
+      //           closedRow.appendTo(historyTable);
+      //           row.remove();
+      //         }
+      //       });
+      //     });
+      //   }
+      //});
     }).catch(function (err) {
       console.error(err);
     });
