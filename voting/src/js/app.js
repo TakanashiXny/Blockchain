@@ -70,7 +70,7 @@ App = {
 
   joinVote: function (voteIndex, address) {
     console.log("Joining vote at index", voteIndex);
-    $(".btn-join").eq(voteIndex).prop("disabled", true);
+    $(".btn-join").eq(voteIndex);
     // Implement logic for joining vote in the contract
     App.contracts.Voting.deployed().then(function (instance) {
       return instance.addCandidate(voteIndex, address, { from: web3.eth.accounts[0] });
@@ -82,6 +82,30 @@ App = {
     }).catch(function (err) {
       console.error(err);
     });
+  },
+
+  getCandidates: function(voteIndex) { 
+    return new Promise((resolve, reject) => {
+        App.contracts.Voting.deployed().then(function(instance) {
+            return instance.getCandidates.call(voteIndex);
+        }).then(function(candidates) {
+            resolve(candidates);
+        }).catch(function(err) {
+            console.error(err);
+            reject(err);
+        });
+    });
+  },
+
+  vote: function (voteIndex, address) {
+    App.contracts.Voting.deployed().then(function (instance) {
+      return instance.vote(voteIndex, address, { from: web3.eth.accounts[0] });
+    }).then(function (result) {
+      console.log('vote success');
+      alert("成功投票");
+    }).catch(function (err) {
+      console.error(err);
+    })
   },
 
   showCandidatesModal: function (voteIndex) {
@@ -133,6 +157,39 @@ App = {
             voteButton.data("voteIndex", voteIndex.toNumber());
             row.append($("<td>").append(voteButton));
 
+            voteButton.click(function() {
+              var voteIndex = $(this).data("voteIndex");
+          
+              // 假设你有一个获取候选人列表的函数 getCandidates(voteIndex)
+              var candidates = App.getCandidates(voteIndex);
+              App.getCandidates(voteIndex).then(function (candidates) {
+                var candidatesList = $('#candidatesList');
+                candidatesList.empty();
+                console.log(candidates);
+                candidates.forEach(function(candidate, index) {
+                    candidatesList.append(
+                        '<div class="form-check">' +
+                        '<input class="form-check-input" type="checkbox" value="' + candidate + '" id="candidate' + index + '">' +
+                        '<label class="form-check-label" for="candidate' + index + '">' + candidate + '</label>' +
+                        '</div>'
+                    );
+                });
+            
+                $('#voteModal').modal('show');
+            
+                $('#voteConfirm').off().on('click', function() {
+                    var selectedCandidates = [];
+                    $('#candidatesList input:checked').each(function() {
+                        selectedCandidates.push($(this).val());
+                    });
+            
+                    $('#voteModal').modal('hide');
+            
+                    App.vote(voteIndex, address);
+                });
+              });
+              
+            });
             votesTable.append(row);
           });
         }
