@@ -41,16 +41,13 @@ App = {
     // Bind click event for creating vote button
     $(document).on("click", "#createVoteBtn", App.handleCreateVote);
     // Bind click event for join vote button
-    $(document).on("click", "#join", function () {
-      var voteIndex = $(this).data("voteIndex");
-      App.joinVote(voteIndex);
-    });
     // Bind click event for vote button
     $(document).on("click", "#vote", function () {
       var voteIndex = $(this).data("voteIndex");
       App.showCandidatesModal(voteIndex);
     });
     $(document).on("click", "#showVotesLink", App.displayVotes);
+    $(document).on("click", '#candidateConfirm, App.joinVote')
   },
 
   handleCreateVote: function (event) {
@@ -71,10 +68,20 @@ App = {
     });
   },
 
-  joinVote: function (voteIndex) {
+  joinVote: function (voteIndex, address) {
     console.log("Joining vote at index", voteIndex);
     $(".btn-join").eq(voteIndex).prop("disabled", true);
     // Implement logic for joining vote in the contract
+    App.contracts.Voting.deployed().then(function (instance) {
+      return instance.addCandidate(voteIndex, address, { from: web3.eth.accounts[0] });
+    }).then(function (result) {
+      console.log(`OK`);
+      // Refresh votes display after creating a vote
+      // App.displayVotes();
+      alert("成功成为候选人");
+    }).catch(function (err) {
+      console.error(err);
+    });
   },
 
   showCandidatesModal: function (voteIndex) {
@@ -101,9 +108,26 @@ App = {
             row.append("<td>" + creator + "</td>");
             row.append("<td>" + endTime + "</td>");
 
-            var joinButton = $("<button class='btn btn-primary btn-join'>Join</button>");
+            var joinButton = $("<button id='join' class='btn btn-primary btn-join'>Join</button>");
             joinButton.data("voteIndex", voteIndex.toNumber());
             row.append($("<td>").append(joinButton));
+
+            joinButton.click(function() {
+              var voteIndex = $(this).data("voteIndex");
+              var address;
+              // showConfirmationDialog(voteIndex);
+              $('#joinModal').modal('show'); // 显示模态框
+              $('#candidateConfirm').on('click', function() {
+                address = $('#participantAddress').val();
+                // 在这里执行确认操作，比如调用合约中添加候选人的方法
+                $('#joinModal').modal('hide');
+                App.joinVote(voteIndex, address);
+              });
+
+              $('#candidateCancel').on('click', function() {
+                $('#joinModal').modal('hide');
+              });
+            });
 
             var voteButton = $("<button class='btn btn-success btn-vote'>Vote</button>");
             voteButton.data("voteIndex", voteIndex.toNumber());
@@ -114,27 +138,27 @@ App = {
         }
       });
 
-      // instance.VoteClosed({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
-      //   if (!error) {
-      //     events.forEach(function (event) {
-      //       var { voteIndex, winner } = event.args;
+      instance.VoteClosed({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
+        if (!error) {
+          events.forEach(function (event) {
+            var { voteIndex, winner } = event.args;
 
-      //       $("#votesTable tr").each(function () {
-      //         var row = $(this);
-      //         var idx = row.find(".btn-join").data("voteIndex");
+            $("#votesTable tr").each(function () {
+              var row = $(this);
+              var idx = row.find(".btn-join").data("voteIndex");
 
-      //         if (idx === voteIndex.toNumber()) {
-      //           var closedRow = row.clone();
-      //           closedRow.find("td:last").remove(); // Remove join button cell
-      //           closedRow.find("td:last").remove(); // Remove vote button cell
-      //           closedRow.append("<td>" + winner + "</td>");
-      //           closedRow.appendTo(historyTable);
-      //           row.remove();
-      //         }
-      //       });
-      //     });
-      //   }
-      //});
+              if (idx === voteIndex.toNumber()) {
+                var closedRow = row.clone();
+                closedRow.find("td:last").remove(); // Remove join button cell
+                closedRow.find("td:last").remove(); // Remove vote button cell
+                closedRow.append("<td>" + winner + "</td>");
+                closedRow.appendTo(historyTable);
+                row.remove();
+              }
+            });
+          });
+        }
+      });
     }).catch(function (err) {
       console.error(err);
     });

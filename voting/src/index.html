@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>区块链投票系统</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css">
     <style>
         .hide {
             display: none;
@@ -22,7 +23,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Voting System</a>
+            <a class="navbar-brand" href="#" onclick="showHome()">Voting System</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
@@ -34,7 +35,17 @@
     </div>
 </nav>
 
-<div class="container" id="showVotesPage">
+<div class="container" id="homePage">
+    <div class="row">
+        <div class="col-xs-12">
+            <h1 class="text-center">欢迎来到区块链投票系统</h1>
+            <hr>
+            <!-- Add content for the home page here -->
+        </div>
+    </div>
+</div>
+
+<div class="container hide" id="showVotesPage">
     <div class="row">
         <div class="col-xs-12">
             <h1 class="text-center">欢迎来到投票系统，看看这些投票吧</h1>
@@ -57,6 +68,27 @@
                 <!-- Votes will load here -->
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<div id="joinModal" class="modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Vote</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="participantAddress">Account Address:</label>
+                    <input type="text" class="form-control" id="participantAddress" placeholder="Enter your account address...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="candidateConfirm" class="btn btn-primary">Confirm</button>
+                <button type="button" id="candidateCancel" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            </div>
         </div>
     </div>
 </div>
@@ -124,19 +156,29 @@
 <script src="js/truffle-contract.js"></script>
 <script src="js/app.js"></script>
 <script>
+    function showHome() {
+        document.getElementById('homePage').classList.remove('hide');
+        document.getElementById('showVotesPage').classList.add('hide');
+        document.getElementById('createVotePage').classList.add('hide');
+        document.getElementById('showHistoryPage').classList.add('hide');
+    }
+
     function showVotes() {
+        document.getElementById('homePage').classList.add('hide');
         document.getElementById('showVotesPage').classList.remove('hide');
         document.getElementById('createVotePage').classList.add('hide');
         document.getElementById('showHistoryPage').classList.add('hide');
     }
 
     function showCreateVote() {
+        document.getElementById('homePage').classList.add('hide');
         document.getElementById('showVotesPage').classList.add('hide');
         document.getElementById('createVotePage').classList.remove('hide');
         document.getElementById('showHistoryPage').classList.add('hide');
     }
 
     function showHistory() {
+        document.getElementById('homePage').classList.add('hide');
         document.getElementById('showVotesPage').classList.add('hide');
         document.getElementById('createVotePage').classList.add('hide');
         document.getElementById('showHistoryPage').classList.remove('hide');
