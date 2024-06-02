@@ -28,10 +28,10 @@ App = {
 
   initContract: function () {
     // Load VotingContract.json and initiate the contract
-    $.getJSON("VotingContract.json", function (data) {
+    $.getJSON("Voting.json", function (data) {
       var VotingContractArtifact = data;
-      App.contracts.VotingContract = TruffleContract(VotingContractArtifact);
-      App.contracts.VotingContract.setProvider(App.web3Provider);
+      App.contracts.Voting = TruffleContract(VotingContractArtifact);
+      App.contracts.Voting.setProvider(App.web3Provider);
     });
 
     return App.bindEvents();
@@ -58,10 +58,10 @@ App = {
     var maxVoters = $("#maxVoters").val();
     var endTime = new Date($("#endTime").val()).getTime() / 1000;
 
-    App.contracts.VotingContract.deployed().then(function (instance) {
+    App.contracts.Voting.deployed().then(function (instance) {
       return instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0] });
     }).then(function (result) {
-      console.log("Vote created successfully!");
+      console.log(`The index of the vote: ${result}`);
       $("#createVoteModal").modal("hide");
       // Refresh votes display after creating a vote
       App.displayVotes();
@@ -83,8 +83,8 @@ App = {
   },
 
   displayVotes: function () {
-    App.contracts.VotingContract.deployed().then(function (instance) {
-      return instance.getVotes();
+    App.contracts.Voting.deployed().then(function (instance) {
+      return instance.getVotes.call();
     }).then(function (votes) {
       var votesTable = $("#votesTable");
       var historyTable = $("#historyTable");

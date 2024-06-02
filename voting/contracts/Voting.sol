@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.4.16 <0.9.0;
+pragma experimental ABIEncoderV2;
 
 contract Voting {
     struct Candidate {
@@ -26,7 +27,7 @@ contract Voting {
     event VoteClosed(uint256 indexed voteIndex, address winner);
 
     function createVote(string memory _name, uint256 _max_voters, uint256 _endTime) public returns (uint256) {
-        require(_endTime > block.timestamp, "End time must be in the future");
+        // require(_endTime > block.timestamp, "End time must be in the future");
 
         // 创建投票实例并添加到数组中
         Vote memory newVote = Vote({
@@ -44,6 +45,32 @@ contract Voting {
         emit NewVote(votes.length - 1, msg.sender, _name, _max_voters, _endTime);
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
+
+    function getVotes() public view returns (Vote[] memory) {
+        uint256 notClosedCount = 0;
+
+        // 先计算 closed 为 true 的投票数量
+        for (uint256 i = 0; i < votes.length; i++) {
+            if (!votes[i].closed) {
+                notClosedCount++;
+            }
+        }
+
+        // 初始化内存数组
+        Vote[] memory notClosedVotes = new Vote[](notClosedCount);
+        uint256 index = 0;
+
+        // 填充内存数组
+        for (uint256 i = 0; i < votes.length; i++) {
+            if (!votes[i].closed) {
+                notClosedVotes[index] = votes[i];
+                index++;
+            }
+        }
+
+        return notClosedVotes;
+    }
+
 
     function addCandidate(uint256 _voteIndex, address _addr) public {
         require(_voteIndex < votes.length, "Invalid vote index");
