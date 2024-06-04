@@ -103,9 +103,46 @@ App = {
     }).then(function (result) {
       console.log('vote success');
       alert("成功投票");
+    }).then(function (instance) {
+      instance.VoteClosed({}, {
+        fromBlock: 0,
+        toBlock: 'latest'
+      }).watch(function(error, event) {
+        if (!error) {
+          console.log("Vote closed event triggered", event);
+          App.handleVoteClosed(event.args.voteIndex, event.args.winner);
+        } else {
+          console.error(error);
+        }
+      });
     }).catch(function (err) {
       console.error(err);
     })
+  },
+
+  handleVoteClosed: function(voteIndex) {
+    // Remove the vote row from active votes table
+    App.contracts.Voting.deployed().then(function (instance) {
+      return instance.getWinner(voteIndex, { from: web3.eth.accounts[0] });
+    }).then (function (result) {
+      console.log(result);
+      $('#votesTable tr').each(function() {
+        var row = $(this);
+        var cell = row.find("td:eq(3) button");
+        if (cell.data("voteIndex") == voteIndex.toNumber()) {
+          var voteName = row.find("td:eq(0)").text();
+          var creatorAddress = row.find("td:eq(1)").text();
+          row.remove();
+          
+          // Add to history table
+          var historyRow = $("<tr>");
+          historyRow.append("<td>" + voteName + "</td>");
+          historyRow.append("<td>" + creatorAddress + "</td>");
+          historyRow.append("<td>" + result + "</td>");
+          $('#historyTable').append(historyRow);
+        }
+      });
+    }) 
   },
 
   showCandidatesModal: function (voteIndex) {
@@ -142,10 +179,10 @@ App = {
               // showConfirmationDialog(voteIndex);
               $('#joinModal').modal('show'); // 显示模态框
               $('#candidateConfirm').on('click', function() {
-                address = $('#participantAddress').val();
+                // address = $('#participantAddress').val();
                 // 在这里执行确认操作，比如调用合约中添加候选人的方法
                 $('#joinModal').modal('hide');
-                App.joinVote(voteIndex, address);
+                App.joinVote(voteIndex);
               });
 
               $('#candidateCancel').on('click', function() {
@@ -166,26 +203,38 @@ App = {
                 var candidatesList = $('#candidatesList');
                 candidatesList.empty();
                 console.log(candidates);
+                let index = 0;
                 candidates.forEach(function(candidate, index) {
                     candidatesList.append(
                         '<div class="form-check">' +
-                        '<input class="form-check-input" type="checkbox" value="' + candidate + '" id="candidate' + index + '">' +
+                        '<input class="form-check-input" type="checkbox" value=' + index + ' id="candidate' + index + '">' +
                         '<label class="form-check-label" for="candidate' + index + '">' + candidate + '</label>' +
                         '</div>'
                     );
+                    index++;
                 });
             
                 $('#voteModal').modal('show');
             
                 $('#voteConfirm').off().on('click', function() {
-                    var selectedCandidates = [];
-                    $('#candidatesList input:checked').each(function() {
-                        selectedCandidates.push($(this).val());
-                    });
-            
-                    $('#voteModal').modal('hide');
-            
-                    App.vote(voteIndex, address);
+                  var selectedCandidates = [];
+                  var selectedIndexes = [];
+                  $('#candidatesList input:checked').each(function() {
+                      selectedCandidates.push($(this).val());
+                      selectedIndexes.push($(this).data('index'));
+                  });
+      
+                  $('#voteModal').modal('hide');
+                  console.log('Vote Index:', voteIndex);
+                  console.log('Selected Candidates:', selectedCandidates);
+                  console.log('Selected Indexes:', selectedIndexes);
+      
+                  if (selectedCandidates.length > 0) {
+                      var selectedIndex = selectedCandidates[0]; // 只传递第一个选中的候选人的索引
+                      console.log(selectedIndex);
+                      var stop = App.vote(voteIndex, selectedIndex);
+                      console.log("ok");
+                  }
                 });
               });
               

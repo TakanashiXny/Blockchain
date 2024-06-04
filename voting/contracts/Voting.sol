@@ -21,6 +21,8 @@ contract Voting {
 
     Vote[] public votes;
     mapping(uint256 => Candidate[]) public voteToCandidates;
+    mapping(uint256 => address[]) public voteToVoters;
+
 
     event NewVote(uint256 indexed voteIndex, address creator, string name, uint256 maxVoters, uint256 endTime);
     event NewCandidate(uint256 indexed voteIndex, address candidateAddr);
@@ -72,32 +74,37 @@ contract Voting {
     }
 
 
-    function addCandidate(uint256 _voteIndex, address _addr) public {
+    function addCandidate(uint256 _voteIndex) public {
         require(_voteIndex < votes.length, "Invalid vote index");
         require(!votes[_voteIndex].closed, "Vote is closed");
 
-        voteToCandidates[_voteIndex].push(Candidate(_addr, 0));
+        voteToCandidates[_voteIndex].push(Candidate(msg.sender, 0));
         votes[_voteIndex].candidateNum++;
 
-        emit NewCandidate(_voteIndex, _addr);
+        emit NewCandidate(_voteIndex, msg.sender);
     }
 
     function vote(uint256 _voteIndex, uint256 _candidateIndex) public returns (bool) {
-        require(_voteIndex < votes.length, "Invalid vote index");
-        require(!votes[_voteIndex].closed, "Vote is closed");
-        require(votes[_voteIndex].endTime > block.timestamp, "Voting has ended");
+        // require(_voteIndex < votes.length, "Invalid vote index");
+        // require(!votes[_voteIndex].closed, "Vote is closed");
+        // require(votes[_voteIndex].endTime > block.timestamp, "Voting has ended");
+
+        // for (uint i = 0; i < voteToVoters[_voteIndex].length; i++) {
+        //     if (voteToVoters[_voteIndex][i] == msg.sender) {
+        //         return false;
+        //     }
+        // }
 
         voteToCandidates[_voteIndex][_candidateIndex].votes++;
+        voteToVoters[_voteIndex].push(msg.sender);
         votes[_voteIndex].totalVoters++;
 
         // 检查是否到达指定的投票人数
         if (votes[_voteIndex].totalVoters >= votes[_voteIndex].maxVoters) {
             endVote(_voteIndex);
-            
             return true;
-        } else {
-            return false;
-        }
+        } 
+        return false;
     }
 
     function getCandidates(uint256 _voteIndex) public view returns (address[] memory) {
