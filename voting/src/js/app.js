@@ -46,8 +46,9 @@ App = {
       var voteIndex = $(this).data("voteIndex");
       App.showCandidatesModal(voteIndex);
     });
-    $(document).on("click", "#showVotesLink", App.displayVotes);
-    $(document).on("click", '#candidateConfirm, App.joinVote')
+    $(document).on("click", "#showVotesLink", App.displayCurrentVotes);
+    $(document).on("click", "#showHistoryLink", App.displayClosedVotes);
+    $(document).on("click", "#candidateConfirm", App.joinVote);
   },
 
   handleCreateVote: function (event) {
@@ -55,69 +56,67 @@ App = {
     var voteName = $("#voteName").val();
     var maxVoters = $("#maxVoters").val();
     var endTime = new Date($("#endTime").val()).getTime() / 1000;
-
+    console.log(voteName);
     App.contracts.Voting.deployed().then(function (instance) {
-      return instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0] });
-    }).then(function (result) {
-      console.log(`The index of the vote: ${result}`);
-      $("#createVoteModal").modal("hide");
-      // Refresh votes display after creating a vote
-      // App.displayVotes();
+      instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0] }).then(function (result) {
+        console.log(`The index of the vote: ${result}`);
+        $("#createVoteModal").modal("hide");
+        // Refresh votes display after creating a vote
+        // App.displayVotes();
+        document.getElementById('showVotesPage').classList.remove('hide');
+        document.getElementById('createVotePage').classList.add('hide');
+        App.displayCurrentVotes();;
+      })
     }).catch(function (err) {
       console.error(err);
     });
   },
 
-  joinVote: function (voteIndex, address) {
+  joinVote: function (instance, voteIndex) {
     console.log("Joining vote at index", voteIndex);
     $(".btn-join").eq(voteIndex);
     // Implement logic for joining vote in the contract
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.addCandidate(voteIndex, address, { from: web3.eth.accounts[0] });
-    }).then(function (result) {
-      console.log(`OK`);
-      // Refresh votes display after creating a vote
-      // App.displayVotes();
-      alert("成功成为候选人");
-    }).catch(function (err) {
-      console.error(err);
-    });
+    return instance.addCandidate(voteIndex, { from: web3.eth.accounts[0] });
   },
 
-  getCandidates: function(voteIndex) { 
+  getCandidates: function(instance, voteIndex) { 
     return new Promise((resolve, reject) => {
-        App.contracts.Voting.deployed().then(function(instance) {
-            return instance.getCandidates.call(voteIndex);
-        }).then(function(candidates) {
-            resolve(candidates);
-        }).catch(function(err) {
-            console.error(err);
-            reject(err);
-        });
+      var candidates = instance.getCandidates.call(voteIndex);
+      resolve(candidates);
     });
   },
 
-  vote: function (voteIndex, address) {
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.vote(voteIndex, address, { from: web3.eth.accounts[0] });
-    }).then(function (result) {
-      console.log('vote success');
-      alert("成功投票");
-    }).then(function (instance) {
-      instance.VoteClosed({}, {
-        fromBlock: 0,
-        toBlock: 'latest'
-      }).watch(function(error, event) {
-        if (!error) {
-          console.log("Vote closed event triggered", event);
-          App.handleVoteClosed(event.args.voteIndex, event.args.winner);
-        } else {
-          console.error(error);
-        }
+  getVotes: function () {
+    // return new Promise((resolve, reject) => {
+    //   App.contracts.Voting.deployed().then(function(instance) {
+    //       return instance.getOpenVotes.call();
+    //   }).then(function(votes) {
+    //       resolve(votes);
+    //       console.log("votes:");
+    //       console.log(votes);
+    //   }).catch(function(err) {
+    //       console.error(err);
+    //       reject(err);
+    //   });
+    // });
+    return App.contracts.Voting.deployed().then(function(instance) {
+      console.log(instance.getVotes.call());
+      console.log(instance.getOpenVotes.call());
+        return instance.getOpenVotes.call();
+    });
+  },
+
+  getClosedVotes: function () {
+    return new Promise((resolve, reject) => {
+      App.contracts.Voting.deployed().then(function(instance) {
+          return instance.getClosedVotes.call();
+      }).then(function(votes) {
+          resolve(votes);
+      }).catch(function(err) {
+          console.error(err);
+          reject(err);
       });
-    }).catch(function (err) {
-      console.error(err);
-    })
+    });
   },
 
   handleVoteClosed: function(voteIndex) {
@@ -151,123 +150,151 @@ App = {
     // Implement logic for showing candidates modal in the contract
   },
 
-  displayVotes: function () {
+  displayCurrentVotes: function () {
     var votesTable = $("#votesTable");
-    var historyTable = $("#historyTable");
     votesTable.empty();
-    historyTable.empty();
 
     App.contracts.Voting.deployed().then(function (instance) {
-      instance.NewVote({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
-        if (!error) {
-          events.forEach(function (event) {
-            var { voteIndex, creator, name, maxVoters, endTime } = event.args;
-            endTime = new Date(endTime.toNumber() * 1000).toLocaleString();
+        instance.getVoteNum.call().then(function (total_) {
+            var total = total_.toNumber(); // Assuming total_ is a BigNumber object
+            console.log("total");
+            console.log(total);
 
-            var row = $("<tr>");
-            row.append("<td>" + name + "</td>");
-            row.append("<td>" + creator + "</td>");
-            row.append("<td>" + endTime + "</td>");
+            var votePromises = [];
+            for (var i = 0; i < total; i++) {
+                votePromises.push(instance.getVote.call(i));
+            }
 
-            var joinButton = $("<button id='join' class='btn btn-primary btn-join'>Join</button>");
-            joinButton.data("voteIndex", voteIndex.toNumber());
-            row.append($("<td>").append(joinButton));
+            Promise.all(votePromises).then(function (votes) {
+                votes.forEach(function (t, i) {
+                    console.log(t);
 
-            joinButton.click(function() {
-              var voteIndex = $(this).data("voteIndex");
-              var address;
-              // showConfirmationDialog(voteIndex);
-              $('#joinModal').modal('show'); // 显示模态框
-              $('#candidateConfirm').on('click', function() {
-                // address = $('#participantAddress').val();
-                // 在这里执行确认操作，比如调用合约中添加候选人的方法
-                $('#joinModal').modal('hide');
-                App.joinVote(voteIndex);
-              });
+                    var closed = t[0];
+                    var creator = t[1];
+                    var name = t[2];
+                    var endTime = new Date(t[3].toNumber() * 1000).toLocaleString();;
+                    var winner = t[4];
 
-              $('#candidateCancel').on('click', function() {
-                $('#joinModal').modal('hide');
-              });
-            });
+                    if (!closed) {
+                        var row = $("<tr>");
+                        row.append("<td>" + name + "</td>");
+                        row.append("<td>" + creator + "</td>");
+                        row.append("<td>" + endTime + "</td>");
 
-            var voteButton = $("<button class='btn btn-success btn-vote'>Vote</button>");
-            voteButton.data("voteIndex", voteIndex.toNumber());
-            row.append($("<td>").append(voteButton));
+                        let joinButton = $("<button id='join' class='btn btn-primary btn-join'>Join</button>");
+                        joinButton.data("voteIndex", i);
+                        row.append($("<td>").append(joinButton));
 
-            voteButton.click(function() {
-              var voteIndex = $(this).data("voteIndex");
-          
-              // 假设你有一个获取候选人列表的函数 getCandidates(voteIndex)
-              var candidates = App.getCandidates(voteIndex);
-              App.getCandidates(voteIndex).then(function (candidates) {
-                var candidatesList = $('#candidatesList');
-                candidatesList.empty();
-                console.log(candidates);
-                let index = 0;
-                candidates.forEach(function(candidate, index) {
-                    candidatesList.append(
-                        '<div class="form-check">' +
-                        '<input class="form-check-input" type="checkbox" value=' + index + ' id="candidate' + index + '">' +
-                        '<label class="form-check-label" for="candidate' + index + '">' + candidate + '</label>' +
-                        '</div>'
-                    );
-                    index++;
+                        joinButton.click(function() {
+                            var voteIndex = $(this).data("voteIndex");
+                            $('#joinModal').modal('show'); // 显示模态框
+                            $('#candidateConfirm').off().on('click', function() {
+                                $('#joinModal').modal('hide');
+                                App.joinVote(instance, voteIndex);
+                            });
+
+                            $('#candidateCancel').off().on('click', function() {
+                                $('#joinModal').modal('hide');
+                            });
+                        });
+
+                        var voteButton = $("<button class='btn btn-success btn-vote'>Vote</button>");
+                        voteButton.data("voteIndex", i);
+                        row.append($("<td>").append(voteButton));
+
+                        voteButton.click(function() {
+                            var voteIndex = $(this).data("voteIndex");
+
+                            App.getCandidates(instance, voteIndex).then(function (candidates) {
+                                var candidatesList = $('#candidatesList');
+                                candidatesList.empty();
+                                console.log(candidates);
+                                candidates.forEach(function(candidate, index) {
+                                    candidatesList.append(
+                                        '<div class="form-check">' +
+                                        '<input class="form-check-input" type="checkbox" value=' + index + ' id="candidate' + index + '">' +
+                                        '<label class="form-check-label" for="candidate' + index + '">' + candidate + '</label>' +
+                                        '</div>'
+                                    );
+                                });
+
+                                $('#voteModal').modal('show');
+
+                                $('#voteConfirm').off().on('click', function() {
+                                    var selectedCandidates = [];
+                                    var selectedIndexes = [];
+                                    $('#candidatesList input:checked').each(function() {
+                                        selectedCandidates.push($(this).val());
+                                        selectedIndexes.push($(this).data('index'));
+                                    });
+
+                                    $('#voteModal').modal('hide');
+                                    console.log('Vote Index:', voteIndex);
+                                    console.log('Selected Candidates:', selectedCandidates);
+                                    console.log('Selected Indexes:', selectedIndexes);
+
+                                    if (selectedCandidates.length > 0) {
+                                        var selectedIndex = selectedCandidates[0]; // 只传递第一个选中的候选人的索引
+                                        console.log(selectedIndex);
+                                        App.contracts.Voting.deployed().then(function (instance) {
+                                          instance.vote(voteIndex, selectedIndex, { from: web3.eth.accounts[0] })
+                                        });
+                                        console.log("ok");
+                                    }
+                                });
+                            });
+                        });
+                        votesTable.append(row);
+                    }
                 });
-            
-                $('#voteModal').modal('show');
-            
-                $('#voteConfirm').off().on('click', function() {
-                  var selectedCandidates = [];
-                  var selectedIndexes = [];
-                  $('#candidatesList input:checked').each(function() {
-                      selectedCandidates.push($(this).val());
-                      selectedIndexes.push($(this).data('index'));
-                  });
-      
-                  $('#voteModal').modal('hide');
-                  console.log('Vote Index:', voteIndex);
-                  console.log('Selected Candidates:', selectedCandidates);
-                  console.log('Selected Indexes:', selectedIndexes);
-      
-                  if (selectedCandidates.length > 0) {
-                      var selectedIndex = selectedCandidates[0]; // 只传递第一个选中的候选人的索引
-                      console.log(selectedIndex);
-                      var stop = App.vote(voteIndex, selectedIndex);
-                      console.log("ok");
-                  }
-                });
-              });
-              
             });
-            votesTable.append(row);
-          });
-        }
-      });
-
-      instance.VoteClosed({}, { fromBlock: 0, toBlock: 'latest' }).get(function (error, events) {
-        if (!error) {
-          events.forEach(function (event) {
-            var { voteIndex, winner } = event.args;
-
-            $("#votesTable tr").each(function () {
-              var row = $(this);
-              var idx = row.find(".btn-join").data("voteIndex");
-
-              if (idx === voteIndex.toNumber()) {
-                var closedRow = row.clone();
-                closedRow.find("td:last").remove(); // Remove join button cell
-                closedRow.find("td:last").remove(); // Remove vote button cell
-                closedRow.append("<td>" + winner + "</td>");
-                closedRow.appendTo(historyTable);
-                row.remove();
-              }
-            });
-          });
-        }
-      });
-    }).catch(function (err) {
-      console.error(err);
+        });
+    }).catch(function (error) {
+        console.error("Error fetching votes:", error);
     });
+  },
+
+
+  displayClosedVotes: function () {
+    let votesTable = $("#historyTable");
+    votesTable.empty();
+
+    App.contracts.Voting.deployed().then(function (instance) {
+      instance.getVoteNum.call().then(function (total_) {
+          var total = total_.toNumber(); // Assuming total_ is a BigNumber object
+          console.log("total");
+          console.log(total);
+
+          var votePromises = [];
+          for (var i = 0; i < total; i++) {
+              votePromises.push(instance.getVote.call(i));
+          }
+
+          Promise.all(votePromises).then(function (votes) {
+              votes.forEach(function (t, i) {
+                  console.log(t);
+
+                  var closed = t[0];
+                  var creator = t[1];
+                  var name = t[2];
+                  var endTime = new Date(t[3].toNumber() * 1000).toLocaleString();;
+                  var winner = t[4];
+
+                  if (closed) {
+                      var row = $("<tr>");
+                      row.append("<td>" + name + "</td>");
+                      row.append("<td>" + creator + "</td>");
+                      row.append("<td>" + endTime + "</td>");
+
+                      
+                      votesTable.append(row);
+                  }
+              });
+          });
+      });
+  }).catch(function (error) {
+      console.error("Error fetching votes:", error);
+  });
   }
 };
 

@@ -9,6 +9,7 @@ contract Voting {
     }
 
     struct Vote {
+        uint256 voteIndex;
         address creator;
         string name;
         uint256 maxVoters;
@@ -19,20 +20,28 @@ contract Voting {
         address winner;
     }
 
+    uint256 voteNum; 
     Vote[] public votes;
+    Vote[] public closedVotes;
+    // uint256[] openIndexes;
+    uint256[] closeIndexes;
     mapping(uint256 => Candidate[]) public voteToCandidates;
     mapping(uint256 => address[]) public voteToVoters;
 
+    // constructor () public {
+    //     voteNum = 0;
+    // }
 
-    event NewVote(uint256 indexed voteIndex, address creator, string name, uint256 maxVoters, uint256 endTime);
-    event NewCandidate(uint256 indexed voteIndex, address candidateAddr);
-    event VoteClosed(uint256 indexed voteIndex, address winner);
+    function getVoteNum() public view returns (uint256) {
+        return voteNum;
+    }
 
     function createVote(string memory _name, uint256 _max_voters, uint256 _endTime) public returns (uint256) {
         // require(_endTime > block.timestamp, "End time must be in the future");
 
         // 创建投票实例并添加到数组中
         Vote memory newVote = Vote({
+            voteIndex: votes.length,
             creator: msg.sender,
             name: _name,
             maxVoters: _max_voters,
@@ -43,45 +52,51 @@ contract Voting {
             winner: address(0)
         });
         votes.push(newVote);
-
-        emit NewVote(votes.length - 1, msg.sender, _name, _max_voters, _endTime);
+        voteNum++;
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
 
-    function getVotes() public view returns (Vote[] memory) {
-        uint256 notClosedCount = 0;
-
-        // 先计算 closed 为 true 的投票数量
+    function getOpenVotes() public view returns (int[100] memory) {
+        uint256 openNum = 0;
         for (uint256 i = 0; i < votes.length; i++) {
             if (!votes[i].closed) {
-                notClosedCount++;
+                openNum++;
             }
         }
-
-        // 初始化内存数组
-        Vote[] memory notClosedVotes = new Vote[](notClosedCount);
+        int[100] memory openIndexes;
+        // uint256[] storage openIndexes;
         uint256 index = 0;
-
-        // 填充内存数组
         for (uint256 i = 0; i < votes.length; i++) {
             if (!votes[i].closed) {
-                notClosedVotes[index] = votes[i];
+                openIndexes[index] = int(i);
+                // openIndexes.push(i);
                 index++;
             }
         }
 
-        return notClosedVotes;
+        return openIndexes;
     }
 
+    function getVotes() public view returns (Vote[] memory) {
+        return votes;
+    }
+
+    function whetherOpen(uint256 _index) public view returns (bool) {
+        return !votes[_index].closed;
+    }
+
+    function getVote(uint256 voteIndex) public view returns (bool closed_, address creator_, string memory name_, uint256 endTime_, address winner_) {
+        return (votes[voteIndex].closed, votes[voteIndex].creator, votes[voteIndex].name, votes[voteIndex].endTime, votes[voteIndex].winner);
+    } 
+
+    function getClosedVotes() public view returns (uint256[] memory) {
+        return closeIndexes;
+    }
 
     function addCandidate(uint256 _voteIndex) public {
-        require(_voteIndex < votes.length, "Invalid vote index");
-        require(!votes[_voteIndex].closed, "Vote is closed");
-
         voteToCandidates[_voteIndex].push(Candidate(msg.sender, 0));
         votes[_voteIndex].candidateNum++;
 
-        emit NewCandidate(_voteIndex, msg.sender);
     }
 
     function vote(uint256 _voteIndex, uint256 _candidateIndex) public returns (bool) {
@@ -132,23 +147,23 @@ contract Voting {
         }
 
         votes[_voteIndex].winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
+        closeIndexes.push(_voteIndex);
 
         // 发送奖励给获胜的候选人（这里使用了简化的方式，实际中应该使用安全的支付方式）
         // address payable winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
         // uint256 prize = address(this).balance;
         // winner.transfer(prize);
-        address payable winner = address(uint160(votes[_voteIndex].winner));
-        uint256 prize = address(this).balance;
-        winner.transfer(prize);
+        // address payable winner = address(uint160(votes[_voteIndex].winner));
+        //uint256 prize = address(this).balance;
+        //winner.transfer(prize);
 
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
 
-        emit VoteClosed(_voteIndex, winner);
     }
     
-    function() external payable {
-        // This is the fallback function, used to receive Ether
-    }
+    // function() external payable {
+    //     // This is the fallback function, used to receive Ether
+    // }
     // receive() external payable {}
 }
