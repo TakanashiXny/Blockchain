@@ -65,7 +65,7 @@ App = {
         // App.displayVotes();
         document.getElementById('showVotesPage').classList.remove('hide');
         document.getElementById('createVotePage').classList.add('hide');
-        App.displayCurrentVotes();;
+        App.displayCurrentVotes();
       })
     }).catch(function (err) {
       console.error(err);
@@ -237,7 +237,7 @@ App = {
                                         var selectedIndex = selectedCandidates[0]; // 只传递第一个选中的候选人的索引
                                         console.log(selectedIndex);
                                         App.contracts.Voting.deployed().then(function (instance) {
-                                          instance.vote(voteIndex, selectedIndex, { from: web3.eth.accounts[0] })
+                                          return instance.vote(voteIndex, selectedIndex, { from: web3.eth.accounts[0] })
                                         });
                                         console.log("ok");
                                     }
@@ -284,7 +284,7 @@ App = {
                       var row = $("<tr>");
                       row.append("<td>" + name + "</td>");
                       row.append("<td>" + creator + "</td>");
-                      row.append("<td>" + endTime + "</td>");
+                      row.append("<td>" + winner + "</td>");
 
                       
                       votesTable.append(row);
