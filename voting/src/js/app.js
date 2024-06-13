@@ -58,7 +58,7 @@ App = {
     var endTime = new Date($("#endTime").val()).getTime() / 1000;
     console.log(voteName);
     App.contracts.Voting.deployed().then(function (instance) {
-      instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0] }).then(function (result) {
+      instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0], value: web3.toWei(10, "ether"), payable: true }).then(function (result) {
         console.log(`The index of the vote: ${result}`);
         $("#createVoteModal").modal("hide");
         // Refresh votes display after creating a vote
@@ -76,7 +76,7 @@ App = {
     console.log("Joining vote at index", voteIndex);
     $(".btn-join").eq(voteIndex);
     // Implement logic for joining vote in the contract
-    return instance.addCandidate(voteIndex, { from: web3.eth.accounts[0] });
+    return instance.addCandidate(voteIndex, { from: web3.eth.accounts[0], value: web3.toWei(6, "ether"), payable: true });
   },
 
   getCandidates: function(instance, voteIndex) { 
@@ -244,6 +244,19 @@ App = {
                                 });
                             });
                         });
+
+                        let endButton = $("<button id='end' class='btn btn-primary btn-join'>End</button>");
+                        endButton.data("voteIndex", i);
+                        row.append($("<td>").append(endButton));
+
+                        endButton.click(function() {
+                          var index = $(this).data("voteIndex");
+                          console.log(index);
+                          App.contracts.Voting.deployed().then(function (instance) {
+                            instance.endVote(index, { from: web3.eth.accounts[0] });
+                          })
+                        });
+
                         votesTable.append(row);
                     }
                 });

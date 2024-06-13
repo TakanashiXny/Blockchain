@@ -36,7 +36,7 @@ contract Voting {
         return voteNum;
     }
 
-    function createVote(string memory _name, uint256 _max_voters, uint256 _endTime) public returns (uint256) {
+    function createVote(string memory _name, uint256 _max_voters, uint256 _endTime) public payable returns (uint256) {
         // require(_endTime > block.timestamp, "End time must be in the future");
 
         // 创建投票实例并添加到数组中
@@ -53,6 +53,7 @@ contract Voting {
         });
         votes.push(newVote);
         voteNum++;
+        payable(address(this)).transfer(msg.value);
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
 
@@ -93,13 +94,13 @@ contract Voting {
         return closeIndexes;
     }
 
-    function addCandidate(uint256 _voteIndex) public {
+    function addCandidate(uint256 _voteIndex) public payable {
         voteToCandidates[_voteIndex].push(Candidate(msg.sender, 0));
         votes[_voteIndex].candidateNum++;
-
+        payable(votes[_voteIndex].creator).transfer(msg.value); 
     }
 
-    function vote(uint256 _voteIndex, uint256 _candidateIndex) public returns (bool) {
+    function vote(uint256 _voteIndex, uint256 _candidateIndex) public payable returns (bool) {
         // require(_voteIndex < votes.length, "Invalid vote index");
         // require(!votes[_voteIndex].closed, "Vote is closed");
         // require(votes[_voteIndex].endTime > block.timestamp, "Voting has ended");
@@ -109,7 +110,6 @@ contract Voting {
         //         return false;
         //     }
         // }
-
         voteToCandidates[_voteIndex][_candidateIndex].votes++;
         voteToVoters[_voteIndex].push(msg.sender);
         votes[_voteIndex].totalVoters++;
@@ -134,7 +134,7 @@ contract Voting {
         return votes[_voteIndex].winner;
     }
 
-    function endVote(uint256 _voteIndex) private {
+    function endVote(uint256 _voteIndex) public payable {
         uint256 winningVotes = 0;
         uint256 winningCandidateIndex;
 
@@ -149,21 +149,14 @@ contract Voting {
         votes[_voteIndex].winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
         closeIndexes.push(_voteIndex);
 
-        // 发送奖励给获胜的候选人（这里使用了简化的方式，实际中应该使用安全的支付方式）
-        // address payable winner = voteToCandidates[_voteIndex][winningCandidateIndex].addr;
-        // uint256 prize = address(this).balance;
-        // winner.transfer(prize);
-        // address payable winner = address(uint160(votes[_voteIndex].winner));
-        //uint256 prize = address(this).balance;
-        //winner.transfer(prize);
+        payable(votes[_voteIndex].winner).transfer(5 ether);
 
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
-
     }
     
     // function() external payable {
     //     // This is the fallback function, used to receive Ether
     // }
-    // receive() external payable {}
+    receive() external payable {}
 }
