@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>区块链投票系统</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
     <style>
         .hide {
             display: none;
@@ -40,7 +40,9 @@
         <div class="col-xs-12">
             <h1 class="text-center">欢迎来到区块链投票系统</h1>
             <hr>
-            <button id="getHashesButton">得到所有的交易哈希</button>
+            <div class="button-container">
+                <button id="getHashesButton" class="btn-stylish">得到所有的交易哈希</button>
+            </div>
             <ul id="transactionHashes"></ul>
         </div>
     </div>

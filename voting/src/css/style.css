@@ -36,3 +36,8 @@
   display: flex;
   justify-content: center;
 }
+
+
+.button-container {
+  text-align: center; /* 按钮内文本居中 */
+}
