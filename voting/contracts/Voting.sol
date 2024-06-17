@@ -27,6 +27,7 @@ contract Voting {
     uint256[] closeIndexes;
     mapping(uint256 => Candidate[]) public voteToCandidates;
     mapping(uint256 => address[]) public voteToVoters;
+    bytes32[] public transactionHashes;
 
     // constructor () public {
     //     voteNum = 0;
@@ -54,6 +55,8 @@ contract Voting {
         votes.push(newVote);
         voteNum++;
         payable(address(this)).transfer(msg.value);
+        bytes32 txHash = blockhash(block.number - 1);
+        transactionHashes.push(txHash);
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
 
@@ -98,6 +101,8 @@ contract Voting {
         voteToCandidates[_voteIndex].push(Candidate(msg.sender, 0));
         votes[_voteIndex].candidateNum++;
         payable(votes[_voteIndex].creator).transfer(msg.value); 
+        bytes32 txHash = blockhash(block.number - 1);
+        transactionHashes.push(txHash);
     }
 
     function vote(uint256 _voteIndex, uint256 _candidateIndex) public payable returns (bool) {
@@ -150,11 +155,17 @@ contract Voting {
         closeIndexes.push(_voteIndex);
 
         payable(votes[_voteIndex].winner).transfer(5 ether);
+        bytes32 txHash = blockhash(block.number - 1);
+        transactionHashes.push(txHash);
 
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
     }
     
+    function getTransactionHashes() public view returns (bytes32[] memory) {
+        return transactionHashes;
+    }
+
     // function() external payable {
     //     // This is the fallback function, used to receive Ether
     // }

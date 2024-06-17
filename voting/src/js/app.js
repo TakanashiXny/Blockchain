@@ -49,6 +49,7 @@ App = {
     $(document).on("click", "#showVotesLink", App.displayCurrentVotes);
     $(document).on("click", "#showHistoryLink", App.displayClosedVotes);
     $(document).on("click", "#candidateConfirm", App.joinVote);
+    $(document).on("click", "#getHashesButton", App.displayTransactionHashes);
   },
 
   handleCreateVote: function (event) {
@@ -308,7 +309,31 @@ App = {
   }).catch(function (error) {
       console.error("Error fetching votes:", error);
   });
-  }
+  },
+
+  displayTransactionHashes() {
+    App.contracts.Voting.deployed().then(function (instance) {
+      instance.getTransactionHashes.call().then(function (hashes) {
+        console.log(hashes);
+
+        // 确保哈希是一个数组
+        if (!Array.isArray(hashes)) {
+            hashes = Object.values(hashes);
+        }
+
+        // 显示哈希
+        const ul = document.getElementById("transactionHashes");
+        ul.innerHTML = ""; // 清空之前的哈希列表
+        hashes.forEach(hash => {
+            const li = document.createElement("li");
+            li.textContent = hash;
+            ul.appendChild(li);
+        });
+      });
+      
+    })
+    
+}
 };
 
 $(function () {
