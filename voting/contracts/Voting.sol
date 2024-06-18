@@ -28,6 +28,7 @@ contract Voting {
     mapping(uint256 => Candidate[]) public voteToCandidates;
     mapping(uint256 => address[]) public voteToVoters;
     bytes32[] public transactionHashes;
+    bytes32 public merkleRoot;
 
     // constructor () public {
     //     voteNum = 0;
@@ -56,6 +57,7 @@ contract Voting {
         voteNum++;
         payable(address(this)).transfer(msg.value);
         bytes32 txHash = blockhash(block.number - 1);
+        updateMerkleRoot();
         transactionHashes.push(txHash);
         return votes.length - 1; // 返回新投票的索引作为投票地址
     }
@@ -103,6 +105,7 @@ contract Voting {
         payable(votes[_voteIndex].creator).transfer(msg.value); 
         bytes32 txHash = blockhash(block.number - 1);
         transactionHashes.push(txHash);
+        updateMerkleRoot();
     }
 
     function vote(uint256 _voteIndex, uint256 _candidateIndex) public payable returns (bool) {
@@ -157,13 +160,46 @@ contract Voting {
         payable(votes[_voteIndex].winner).transfer(5 ether);
         bytes32 txHash = blockhash(block.number - 1);
         transactionHashes.push(txHash);
-
+        updateMerkleRoot();
         // 标记投票为关闭状态
         votes[_voteIndex].closed = true;
     }
     
     function getTransactionHashes() public view returns (bytes32[] memory) {
         return transactionHashes;
+    }
+
+    function updateMerkleRoot() internal {
+        merkleRoot = computeMerkleRoot(transactionHashes);
+    }
+
+    function computeMerkleRoot(bytes32[] memory hashes) public pure returns (bytes32) {
+        if (hashes.length == 0) {
+            return bytes32(0);
+        } else if (hashes.length == 1) {
+            return hashes[0];
+        } else {
+            while (hashes.length > 1) {
+                if (hashes.length % 2 != 0) {
+                    bytes32[] memory newHashes = new bytes32[](hashes.length + 1);
+                    for (uint256 i = 0; i < hashes.length; i++) {
+                        newHashes[i] = hashes[i];
+                    }
+                    newHashes[hashes.length] = hashes[hashes.length - 1];
+                    hashes = newHashes;
+                }
+                bytes32[] memory newLevel = new bytes32[](hashes.length / 2);
+                for (uint256 i = 0; i < hashes.length; i += 2) {
+                    newLevel[i / 2] = keccak256(abi.encodePacked(hashes[i], hashes[i + 1]));
+                }
+                hashes = newLevel;
+            }
+            return hashes[0];
+        }
+    }
+
+    function getMerkleRoot() public view returns (bytes32) {
+        return merkleRoot;
     }
 
     // function() external payable {

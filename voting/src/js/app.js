@@ -246,17 +246,17 @@ App = {
                             });
                         });
 
-                        let endButton = $("<button id='end' class='btn btn-primary btn-join'>End</button>");
-                        endButton.data("voteIndex", i);
-                        row.append($("<td>").append(endButton));
+                        // let endButton = $("<button id='end' class='btn btn-primary btn-join'>End</button>");
+                        // endButton.data("voteIndex", i);
+                        // row.append($("<td>").append(endButton));
 
-                        endButton.click(function() {
-                          var index = $(this).data("voteIndex");
-                          console.log(index);
-                          App.contracts.Voting.deployed().then(function (instance) {
-                            instance.endVote(index, { from: web3.eth.accounts[0] });
-                          })
-                        });
+                        // endButton.click(function() {
+                        //   var index = $(this).data("voteIndex");
+                        //   console.log(index);
+                        //   App.contracts.Voting.deployed().then(function (instance) {
+                        //     instance.endVote(index, { from: web3.eth.accounts[0] });
+                        //   })
+                        // });
 
                         votesTable.append(row);
                     }
@@ -330,6 +330,16 @@ App = {
             ul.appendChild(li);
         });
       });
+
+      instance.getMerkleRoot.call().then(function (root) {
+        console.log("根")
+        console.log(root);
+        const p = document.getElementById("merkleRoot");
+        p.innerHTML = "";
+        p.textContent = "默克尔根：" + root;
+    }).catch(error => {
+        console.error("Error retrieving Merkle root:", error);
+    });
       
     })
     

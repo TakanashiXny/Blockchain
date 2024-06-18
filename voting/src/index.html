@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>区块链投票系统</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <!-- <link rel="stylesheet" type="text/css" href="css/style.css"> -->
     <style>
         .hide {
             display: none;
@@ -44,6 +44,7 @@
                 <button id="getHashesButton" class="btn-stylish">得到所有的交易哈希</button>
             </div>
             <ul id="transactionHashes"></ul>
+            <div id="merkleRoot"></div>
         </div>
     </div>
 </div>
@@ -65,7 +66,6 @@
                     <th>投票结束时间</th>
                     <th>成为参与者</th>
                     <th>投票</th>
-                    <th>创建者操作</th>
                 </tr>
                 </thead>
                 <tbody id="votesTable">
