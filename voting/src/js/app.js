@@ -7,11 +7,9 @@ App = {
   },
 
   initWeb3: async function () {
-    // Initialize web3 and set the provider to the appropriate network
     if (window.ethereum) {
       App.web3Provider = window.ethereum;
       try {
-        // Request account access
         await window.ethereum.enable();
       } catch (error) {
         console.error("User denied account access");
@@ -27,7 +25,6 @@ App = {
   },
 
   initContract: function () {
-    // Load VotingContract.json and initiate the contract
     $.getJSON("Voting.json", function (data) {
       var VotingContractArtifact = data;
       App.contracts.Voting = TruffleContract(VotingContractArtifact);
@@ -38,10 +35,7 @@ App = {
   },
 
   bindEvents: function () {
-    // Bind click event for creating vote button
     $(document).on("click", "#createVoteBtn", App.handleCreateVote);
-    // Bind click event for join vote button
-    // Bind click event for vote button
     $(document).on("click", "#vote", function () {
       var voteIndex = $(this).data("voteIndex");
       App.showCandidatesModal(voteIndex);
@@ -62,8 +56,6 @@ App = {
       instance.createVote(voteName, maxVoters, endTime, { from: web3.eth.accounts[0], value: web3.toWei(10, "ether"), payable: true }).then(function (result) {
         console.log(`The index of the vote: ${result}`);
         $("#createVoteModal").modal("hide");
-        // Refresh votes display after creating a vote
-        // App.displayVotes();
         document.getElementById('showVotesPage').classList.remove('hide');
         document.getElementById('createVotePage').classList.add('hide');
         App.displayCurrentVotes();
@@ -76,7 +68,6 @@ App = {
   joinVote: function (instance, voteIndex) {
     console.log("Joining vote at index", voteIndex);
     $(".btn-join").eq(voteIndex);
-    // Implement logic for joining vote in the contract
     return instance.addCandidate(voteIndex, { from: web3.eth.accounts[0], value: web3.toWei(6, "ether"), payable: true });
   },
 
@@ -84,26 +75,6 @@ App = {
     return new Promise((resolve, reject) => {
       var candidates = instance.getCandidates.call(voteIndex);
       resolve(candidates);
-    });
-  },
-
-  getVotes: function () {
-    // return new Promise((resolve, reject) => {
-    //   App.contracts.Voting.deployed().then(function(instance) {
-    //       return instance.getOpenVotes.call();
-    //   }).then(function(votes) {
-    //       resolve(votes);
-    //       console.log("votes:");
-    //       console.log(votes);
-    //   }).catch(function(err) {
-    //       console.error(err);
-    //       reject(err);
-    //   });
-    // });
-    return App.contracts.Voting.deployed().then(function(instance) {
-      console.log(instance.getVotes.call());
-      console.log(instance.getOpenVotes.call());
-        return instance.getOpenVotes.call();
     });
   },
 
@@ -121,7 +92,6 @@ App = {
   },
 
   handleVoteClosed: function(voteIndex) {
-    // Remove the vote row from active votes table
     App.contracts.Voting.deployed().then(function (instance) {
       return instance.getWinner(voteIndex, { from: web3.eth.accounts[0] });
     }).then (function (result) {
@@ -134,7 +104,6 @@ App = {
           var creatorAddress = row.find("td:eq(1)").text();
           row.remove();
           
-          // Add to history table
           var historyRow = $("<tr>");
           historyRow.append("<td>" + voteName + "</td>");
           historyRow.append("<td>" + creatorAddress + "</td>");
@@ -245,19 +214,6 @@ App = {
                                 });
                             });
                         });
-
-                        // let endButton = $("<button id='end' class='btn btn-primary btn-join'>End</button>");
-                        // endButton.data("voteIndex", i);
-                        // row.append($("<td>").append(endButton));
-
-                        // endButton.click(function() {
-                        //   var index = $(this).data("voteIndex");
-                        //   console.log(index);
-                        //   App.contracts.Voting.deployed().then(function (instance) {
-                        //     instance.endVote(index, { from: web3.eth.accounts[0] });
-                        //   })
-                        // });
-
                         votesTable.append(row);
                     }
                 });
@@ -275,7 +231,7 @@ App = {
 
     App.contracts.Voting.deployed().then(function (instance) {
       instance.getVoteNum.call().then(function (total_) {
-          var total = total_.toNumber(); // Assuming total_ is a BigNumber object
+          var total = total_.toNumber();
           console.log("total");
           console.log(total);
 
